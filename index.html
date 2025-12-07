@@ -9,11 +9,7 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚆</text></svg>">
     <title>Train Times</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -24,10 +20,7 @@
             font-size: 16px;
         }
         
-        .container {
-            max-width: 500px;
-            margin: 0 auto;
-        }
+        .container { max-width: 500px; margin: 0 auto; }
         
         h1 {
             color: white;
@@ -38,15 +31,9 @@
             cursor: pointer;
         }
         
-        h1:active {
-            transform: scale(0.98);
-        }
+        h1:active { transform: scale(0.98); }
         
-        .route-buttons {
-            display: grid;
-            gap: 15px;
-            margin-bottom: 30px;
-        }
+        .route-buttons { display: grid; gap: 15px; margin-bottom: 30px; }
         
         .route-btn {
             background: white;
@@ -62,17 +49,9 @@
             text-align: left;
         }
         
-        .route-btn:active {
-            transform: scale(0.98);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
+        .route-btn:active { transform: scale(0.98); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         
-        .route-btn .from-to {
-            display: block;
-            font-size: 14px;
-            color: #666;
-            margin-top: 5px;
-        }
+        .route-btn .from-to { display: block; font-size: 14px; color: #666; margin-top: 5px; }
         
         .results {
             background: white;
@@ -82,15 +61,9 @@
             display: none;
         }
         
-        .results.show {
-            display: block;
-        }
+        .results.show { display: block; }
         
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #666;
-        }
+        .loading { text-align: center; padding: 40px; color: #666; }
         
         .spinner {
             border: 3px solid #f3f3f3;
@@ -107,22 +80,11 @@
             100% { transform: rotate(360deg); }
         }
         
-        .journey {
-            margin-bottom: 20px;
-        }
+        .journey { margin-bottom: 20px; }
         
-        .journey-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
+        .journey-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         
-        .departure-time {
-            font-size: 36px;
-            font-weight: bold;
-            color: #667eea;
-        }
+        .departure-time { font-size: 36px; font-weight: bold; color: #667eea; }
         
         .platform {
             background: #667eea;
@@ -133,11 +95,7 @@
             font-weight: 600;
         }
         
-        .journey-details {
-            color: #666;
-            font-size: 16px;
-            line-height: 1.6;
-        }
+        .journey-details { color: #666; font-size: 16px; line-height: 1.6; }
         
         .status {
             display: inline-block;
@@ -148,44 +106,10 @@
             margin-top: 5px;
         }
         
-        .status.on-time {
-            background: #d4edda;
-            color: #155724;
-        }
+        .status.on-time { background: #d4edda; color: #155724; }
+        .status.delayed { background: #f8d7da; color: #721c24; }
         
-        .status.delayed {
-            background: #f8d7da;
-            color: #721c24;
-        }
-        
-        .nav-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-        }
-        
-        .nav-btn {
-            flex: 1;
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 14px;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .nav-btn:active {
-            transform: scale(0.98);
-            background: #5568d3;
-        }
-        
-        .nav-btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
+        .nav-buttons { display: flex; gap: 10px; margin-top: 20px; }
         
         .back-btn {
             background: #f0f0f0;
@@ -200,10 +124,7 @@
             margin-top: 10px;
         }
         
-        .back-btn:active {
-            transform: scale(0.98);
-            background: #e0e0e0;
-        }
+        .back-btn:active { transform: scale(0.98); background: #e0e0e0; }
         
         .error {
             background: #f8d7da;
@@ -223,34 +144,13 @@
             border-bottom: 1px solid #eee;
         }
         
-        .no-trains {
-            color: #999;
-            font-style: italic;
-            padding: 10px 0;
-            font-size: 14px;
-        }
+        .no-trains { color: #999; font-style: italic; padding: 10px 0; font-size: 14px; }
         
-        .change-info {
-            color: #f39c12;
-            font-weight: 600;
-            font-size: 15px;
-            margin-top: 3px;
-        }
+        .change-info { color: #f39c12; font-weight: 600; font-size: 15px; margin-top: 3px; }
         
-        .journey-compact {
-            margin-top: 10px;
-            padding-top: 15px;
-            border-top: 1px solid #f0f0f0;
-        }
+        .journey-compact { margin-top: 10px; padding-top: 15px; border-top: 1px solid #f0f0f0; }
         
-        .platform-tbd {
-            background: #999;
-            color: white;
-            padding: 5px 12px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-        }
+        .platform-tbd { background: #999; color: white; padding: 5px 12px; border-radius: 8px; font-size: 14px; font-weight: 600; }
         
         .fallback-message {
             background: #fff3cd;
@@ -260,32 +160,12 @@
             border-radius: 8px;
         }
         
-        .fallback-message strong {
-            display: block;
-            color: #856404;
-            margin-bottom: 5px;
-            font-size: 15px;
-        }
+        .fallback-message strong { display: block; color: #856404; margin-bottom: 5px; font-size: 15px; }
+        .fallback-message p { color: #856404; font-size: 13px; margin: 0; }
         
-        .fallback-message p {
-            color: #856404;
-            font-size: 13px;
-            margin: 0;
-        }
+        .connection-info { color: #3498db; font-weight: 600; font-size: 15px; margin-top: 3px; }
         
-        .connection-info {
-            color: #3498db;
-            font-weight: 600;
-            font-size: 15px;
-            margin-top: 3px;
-        }
-        
-        .duration {
-            color: #667eea;
-            font-weight: 600;
-            font-size: 15px;
-            margin-top: 3px;
-        }
+        .duration { color: #667eea; font-weight: 600; font-size: 15px; margin-top: 3px; }
         
         .hero-train {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -305,19 +185,8 @@
             margin-bottom: 10px;
         }
         
-        .hero-train .hero-time {
-            font-size: 56px;
-            font-weight: bold;
-            line-height: 1;
-            margin-bottom: 10px;
-        }
-        
-        .hero-train .hero-countdown {
-            font-size: 24px;
-            font-weight: 600;
-            margin-bottom: 15px;
-            opacity: 0.95;
-        }
+        .hero-train .hero-time { font-size: 56px; font-weight: bold; line-height: 1; margin-bottom: 10px; }
+        .hero-train .hero-countdown { font-size: 24px; font-weight: 600; margin-bottom: 15px; opacity: 0.95; }
         
         .hero-train .hero-platform {
             display: inline-block;
@@ -329,11 +198,7 @@
             margin-bottom: 15px;
         }
         
-        .hero-train .hero-description {
-            font-size: 16px;
-            line-height: 1.5;
-            opacity: 0.95;
-        }
+        .hero-train .hero-description { font-size: 16px; line-height: 1.5; opacity: 0.95; }
         
         .hero-train .hero-status {
             margin-top: 10px;
@@ -345,13 +210,8 @@
             display: inline-block;
         }
         
-        .hero-train .hero-status.warning {
-            background: #f39c12;
-        }
-        
-        .hero-train .hero-status.good {
-            background: #27ae60;
-        }
+        .hero-train .hero-status.warning { background: #f39c12; }
+        .hero-train .hero-status.good { background: #27ae60; }
         
         .other-trains-header {
             font-size: 14px;
@@ -371,30 +231,12 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         
-        .combined-leg {
-            padding: 15px 0;
-        }
+        .combined-leg { padding: 15px 0; }
+        .combined-leg:first-child { padding-top: 0; }
+        .combined-leg:not(:last-child) { border-bottom: 2px dashed #e0e0e0; }
         
-        .combined-leg:first-child {
-            padding-top: 0;
-        }
-        
-        .combined-leg:not(:last-child) {
-            border-bottom: 2px dashed #e0e0e0;
-        }
-        
-        .leg-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        
-        .leg-time {
-            font-size: 28px;
-            font-weight: bold;
-            color: #667eea;
-        }
+        .leg-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .leg-time { font-size: 28px; font-weight: bold; color: #667eea; }
         
         .connection-time {
             background: #fff3cd;
@@ -407,15 +249,8 @@
             margin: 10px 0;
         }
         
-        .connection-time.good {
-            background: #d4edda;
-            color: #155724;
-        }
-        
-        .connection-time.tight {
-            background: #f8d7da;
-            color: #721c24;
-        }
+        .connection-time.good { background: #d4edda; color: #155724; }
+        .connection-time.tight { background: #f8d7da; color: #721c24; }
         
         .total-journey-time {
             background: #667eea;
@@ -435,11 +270,7 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         
-        .results-header h2 {
-            margin: 0 0 5px 0;
-            font-size: 20px;
-            color: #333;
-        }
+        .results-header h2 { margin: 0 0 5px 0; font-size: 20px; color: #333; }
         
         .results-header .update-info {
             display: flex;
@@ -463,10 +294,7 @@
             gap: 5px;
         }
         
-        .refresh-btn:active {
-            transform: scale(0.95);
-            background: #5568d3;
-        }
+        .refresh-btn:active { transform: scale(0.95); background: #5568d3; }
         
         .voice-toggle {
             background: transparent;
@@ -481,13 +309,8 @@
             right: 20px;
         }
         
-        .voice-toggle:active {
-            transform: scale(0.95);
-        }
-        
-        .voice-toggle.disabled {
-            opacity: 0.5;
-        }
+        .voice-toggle:active { transform: scale(0.95); }
+        .voice-toggle.disabled { opacity: 0.5; }
         
         .speak-btn {
             background: #27ae60;
@@ -500,29 +323,11 @@
             margin-left: 10px;
         }
         
-        .speak-btn:active {
-            transform: scale(0.95);
-            background: #229954;
-        }
+        .speak-btn:active { transform: scale(0.95); background: #229954; }
         
-        .countdown {
-            color: #27ae60;
-            font-weight: 600;
-            font-size: 14px;
-            margin-top: 3px;
-        }
-        
-        .status.cancelled {
-            background: #e74c3c;
-            color: white;
-        }
-        
-        .expected-time {
-            color: #e67e22;
-            font-weight: 600;
-            font-size: 14px;
-            margin-top: 3px;
-        }
+        .countdown { color: #27ae60; font-weight: 600; font-size: 14px; margin-top: 3px; }
+        .status.cancelled { background: #e74c3c; color: white; }
+        .expected-time { color: #e67e22; font-weight: 600; font-size: 14px; margin-top: 3px; }
     </style>
 </head>
 <body>
@@ -533,7 +338,6 @@
         </button>
         
         <div class="route-buttons" id="routeButtons">
-            <!-- FROM ADDLESTONE -->
             <button class="route-btn" onclick="getTrains('ASN', 'WAT')">
                 <div>Addlestone → Waterloo</div>
                 <span class="from-to">Next departure</span>
@@ -547,13 +351,11 @@
                 <span class="from-to">Via Staines (with connection)</span>
             </button>
             
-            <!-- FROM WEYBRIDGE -->
             <button class="route-btn" onclick="getTrains('WYB', 'WAT')">
                 <div>Weybridge → Waterloo</div>
                 <span class="from-to">Next departure</span>
             </button>
             
-            <!-- FROM WATERLOO -->
             <button class="route-btn" onclick="getTrains('WAT', 'ASN')">
                 <div>Waterloo → Addlestone</div>
                 <span class="from-to">Next departure</span>
@@ -567,7 +369,6 @@
                 <span class="from-to">Next departure</span>
             </button>
             
-            <!-- FROM WINDSOR -->
             <button class="route-btn" onclick="getCombinedRoute('WNR', 'SNS', 'ASN')">
                 <div>Windsor & Eton Riverside → Addlestone</div>
                 <span class="from-to">Via Staines (with connection)</span>
@@ -593,7 +394,7 @@
         let autoRefreshInterval = null;
         let isCombinedRoute = false;
         let combinedRouteVia = '';
-        let voiceEnabled = localStorage.getItem('voiceEnabled') !== 'false'; // Default true
+        let voiceEnabled = localStorage.getItem('voiceEnabled') !== 'false';
         let hasAnnouncedCurrentTrain = false;
         
         const WORKER_URL = 'https://train-times-api.redgiraffes74.workers.dev';
@@ -603,14 +404,16 @@
             'WYB': 'Weybridge',
             'WAT': 'Waterloo',
             'SNS': 'Staines',
-            'WNR': 'Windsor & Eton Riverside'
+            'WNR': 'Windsor & Eton Riverside',
+            'WOK': 'Woking',
+            'CLJ': 'Clapham Junction'
         };
         
         async function getTrains(from, to) {
             currentFrom = from;
             currentTo = to;
             currentIndex = 0;
-            hasAnnouncedCurrentTrain = false; // Reset for new route
+            hasAnnouncedCurrentTrain = false;
             
             document.getElementById('routeButtons').style.display = 'none';
             document.getElementById('results').classList.add('show');
@@ -642,7 +445,7 @@
             currentTo = to;
             combinedRouteVia = via;
             isCombinedRoute = true;
-            hasAnnouncedCurrentTrain = false; // Reset for new route
+            hasAnnouncedCurrentTrain = false;
             
             document.getElementById('routeButtons').style.display = 'none';
             document.getElementById('results').classList.add('show');
@@ -650,7 +453,6 @@
             document.getElementById('journeyContent').innerHTML = '';
             
             try {
-                // Fetch both legs of the journey
                 const [leg1Response, leg2Response] = await Promise.all([
                     fetch(`${WORKER_URL}?from=${from}&to=${via}`),
                     fetch(`${WORKER_URL}?from=${via}&to=${to}`)
@@ -662,7 +464,6 @@
                 const leg1Trains = leg1Data.trainServices || [];
                 const leg2Trains = leg2Data.trainServices || [];
                 
-                // Check if either leg is showing all trains (no actual service to destination)
                 if (leg1Data.showingAllTrains) {
                     showError(`No trains found from ${stationNames[from]} to ${stationNames[via]}.`);
                     document.getElementById('loading').style.display = 'none';
@@ -681,7 +482,6 @@
                     return;
                 }
                 
-                // Match up connections with minimum 5 minute connection time
                 const connections = findConnections(leg1Trains, leg2Trains, via);
                 
                 if (connections.length === 0) {
@@ -708,14 +508,11 @@
             const connections = [];
             
             leg1Trains.forEach(train1 => {
-                // Find arrival time at via station
                 let arrivalAtVia = null;
                 
-                // Check if via station is the final destination
                 if (train1.destination && train1.destination[0].crs === viaStation) {
-                    arrivalAtVia = train1.sta || train1.std; // Use sta if available, otherwise std
+                    arrivalAtVia = train1.sta || train1.std;
                 } else if (train1.subsequentCallingPoints) {
-                    // Find via station in calling points
                     for (const list of train1.subsequentCallingPoints) {
                         if (list.callingPoint) {
                             const viaStop = list.callingPoint.find(cp => cp.crs === viaStation);
@@ -729,11 +526,8 @@
                 
                 if (!arrivalAtVia) return;
                 
-                // Find connecting trains from via station
                 leg2Trains.forEach(train2 => {
                     const departureFromVia = train2.std;
-                    
-                    // Calculate connection time in minutes
                     const connectionMinutes = calculateTimeDifference(arrivalAtVia, departureFromVia);
                     
                     if (connectionMinutes >= MIN_CONNECTION_MINUTES && connectionMinutes <= MAX_CONNECTION_MINUTES) {
@@ -749,7 +543,6 @@
                 });
             });
             
-            // Sort by earliest departure
             connections.sort((a, b) => {
                 return a.leg1.std.localeCompare(b.leg1.std);
             });
@@ -764,7 +557,6 @@
             let mins1 = h1 * 60 + m1;
             let mins2 = h2 * 60 + m2;
             
-            // Handle overnight (shouldn't happen for these routes but just in case)
             if (mins2 < mins1) {
                 mins2 += 24 * 60;
             }
@@ -781,11 +573,9 @@
         }
         
         function startAutoRefresh() {
-            // Clear any existing interval
             if (autoRefreshInterval) {
                 clearInterval(autoRefreshInterval);
             }
-            // Refresh every 60 seconds
             autoRefreshInterval = setInterval(refreshTrains, 60000);
         }
         
@@ -806,12 +596,10 @@
         }
         
         function calculateCountdown(departureTime, etd) {
-            // Don't show countdown for cancelled trains
             if (etd === 'Cancelled') {
                 return '';
             }
             
-            // Use expected time if it's a time string, otherwise use scheduled time
             let timeToUse = departureTime;
             if (etd && etd.includes(':')) {
                 timeToUse = etd;
@@ -822,12 +610,11 @@
             const departure = new Date();
             departure.setHours(hours, minutes, 0, 0);
             
-            // Handle trains after midnight
             if (departure < now) {
                 departure.setDate(departure.getDate() + 1);
             }
             
-            const diff = Math.floor((departure - now) / 60000); // minutes
+            const diff = Math.floor((departure - now) / 60000);
             
             if (diff < 0) return '';
             if (diff === 0) return 'Departing now';
@@ -863,16 +650,13 @@
         
         function speak(text) {
             if (!voiceEnabled) return;
-            
-            // Cancel any ongoing speech
             window.speechSynthesis.cancel();
             
             const utterance = new SpeechSynthesisUtterance(text);
-            utterance.rate = 0.9; // Slightly slower for clarity
+            utterance.rate = 0.9;
             utterance.pitch = 1.0;
             utterance.volume = 1.0;
             
-            // Try to use a British English voice if available
             const voices = window.speechSynthesis.getVoices();
             const britishVoice = voices.find(voice => 
                 voice.lang.startsWith('en-GB') || voice.name.includes('British') || voice.name.includes('UK')
@@ -889,44 +673,37 @@
             
             const std = train.std;
             const etd = train.etd;
-            const destName = train.destination && train.destination[0] ? train.destination[0].locationName : 'Unknown';
+            
+            const destName = (train.destination && train.destination[0] ? train.destination[0].locationName : '') || stationNames[currentTo] || 'the destination';
             const platform = train.platform || 'to be confirmed';
             
             let announcement = '';
             
             if (isCombinedRoute) {
-                // For combined routes, announce the connection
-                announcement = `The next train to ${stationNames[currentTo]} via ${stationNames[combinedRouteVia]} `;
+                const destNameSafe = stationNames[currentTo] || currentTo;
+                const viaNameSafe = stationNames[combinedRouteVia] || combinedRouteVia;
+                announcement = `The next train to ${destNameSafe} via ${viaNameSafe} `;
                 announcement += `departs at ${std.replace(':', ' ')} from platform ${platform}`;
             } else {
                 announcement = `The next train to ${destName} departs at ${std.replace(':', ' ')} from platform ${platform}`;
             }
             
-            // Add countdown if available
             const countdown = calculateCountdown(std, etd);
             if (countdown && etd !== 'Cancelled') {
-                // Convert countdown text for better voice pronunciation
                 let countdownText = countdown.replace('Departs in ', '');
-                // Replace "1h 23m" with "1 hour 23 minutes"
-                countdownText = countdownText.replace(/(\d+)h\s+(\d+)m/, function(match, hours, mins) {
-                    const hourText = hours === '1' ? 'hour' : 'hours';
-                    const minText = mins === '1' ? 'minute' : 'minutes';
-                    return `${hours} ${hourText} ${mins} ${minText}`;
-                });
-                // Replace standalone "23m" with "23 minutes"
-                countdownText = countdownText.replace(/^(\d+)m$/, function(match, mins) {
-                    return mins === '1' ? '1 minute' : `${mins} minutes`;
-                });
-                // Replace "23 mins" with "23 minutes" (from calculateCountdown)
-                countdownText = countdownText.replace(/(\d+)\s+mins/, function(match, mins) {
-                    return mins === '1' ? '1 minute' : `${mins} minutes`;
-                });
-                // Replace "1 min" with "1 minute"
+                
+                countdownText = countdownText.replace(/(\d+)h\s+(\d+)m/, '$1 hours $2 minutes');
+                countdownText = countdownText.replace(/^(\d+)m$/, '$1 minutes');
+                countdownText = countdownText.replace(/(\d+)\s+mins/, '$1 minutes');
                 countdownText = countdownText.replace(/1\s+min$/, '1 minute');
-                announcement += `, ${countdownText}`;
+
+                if (countdown === 'Departing now') {
+                    announcement += `, departing now`;
+                } else {
+                    announcement += `, departing in ${countdownText}`;
+                }
             }
             
-            // Add delay/cancellation info
             if (etd === 'Cancelled') {
                 announcement = `This service has been cancelled. ${announcement}`;
             } else if (etd && etd.includes(':') && etd !== std) {
@@ -941,10 +718,31 @@
             
             const leg1 = connection.leg1;
             const connectionMins = connection.connectionTime;
+            const platform = leg1.platform || 'to be confirmed';
             
-            let announcement = `The next connection to ${stationNames[currentTo]} via ${stationNames[combinedRouteVia]} `;
-            announcement += `departs at ${leg1.std.replace(':', ' ')} from platform ${leg1.platform || 'to be confirmed'}`;
-            announcement += `. Change at ${stationNames[combinedRouteVia]} with a ${connectionMins} minute connection`;
+            const destinationName = stationNames[currentTo] || currentTo;
+            const viaName = stationNames[combinedRouteVia] || combinedRouteVia;
+            
+            let announcement = `The next connection to ${destinationName} via ${viaName} `;
+            
+            const countdown = calculateCountdown(leg1.std, leg1.etd);
+            let timePhrase = `departs at ${leg1.std.replace(':', ' ')}`;
+
+            if (countdown && leg1.etd !== 'Cancelled') {
+                if (countdown === 'Departing now') {
+                    timePhrase += `, departing now`;
+                } else {
+                    let cleanCountdown = countdown.replace('Departs in ', '');
+                    cleanCountdown = cleanCountdown.replace('1 min', '1 minute');
+                    cleanCountdown = cleanCountdown.replace('mins', 'minutes');
+                    cleanCountdown = cleanCountdown.replace(/(\d+)h/, '$1 hours');
+                    
+                    timePhrase += `, departing in ${cleanCountdown}`;
+                }
+            }
+
+            announcement += `${timePhrase} from platform ${platform}`;
+            announcement += `. Change at ${viaName} with a ${connectionMins} minute connection`;
             
             speak(announcement);
         }
@@ -952,20 +750,17 @@
         function displayCombinedJourneys(htmlPrefix, content) {
             let html = htmlPrefix;
             
-            // Show top 2 recommended connections as hero cards
             const topConnections = currentTrains.slice(0, Math.min(2, currentTrains.length));
             
             topConnections.forEach((connection, idx) => {
                 html += renderCombinedJourney(connection, idx === 0);
             });
             
-            // Auto-announce the first connection
             if (topConnections.length > 0 && !hasAnnouncedCurrentTrain) {
                 setTimeout(() => announceConnection(topConnections[0]), 500);
                 hasAnnouncedCurrentTrain = true;
             }
             
-            // Show other connections
             if (currentTrains.length > 2) {
                 html += `<div class="other-trains-header">OTHER CONNECTIONS</div>`;
                 currentTrains.slice(2).forEach((connection, idx) => {
@@ -987,13 +782,11 @@
             const leg2 = connection.leg2;
             const connectionMins = connection.connectionTime;
             
-            // Calculate total journey time
             const totalMins = calculateTimeDifference(leg1.std, leg2.sta || getArrivalTime(leg2, currentTo));
             const totalHours = Math.floor(totalMins / 60);
             const totalMinsRemainder = totalMins % 60;
             const totalTimeStr = totalHours > 0 ? `${totalHours}h ${totalMinsRemainder}m` : `${totalMinsRemainder}m`;
             
-            // Determine connection quality
             let connectionClass = 'good';
             let connectionLabel = `${connectionMins} min connection`;
             if (connectionMins < 7) {
@@ -1005,189 +798,19 @@
             
             const countdown = calculateCountdown(leg1.std, leg1.etd);
             
+            let heroLabelHtml = '';
+            if (isHero) {
+                heroLabelHtml = `<div class="hero-label">⭐ RECOMMENDED CONNECTION<button class="speak-btn" onclick="announceConnection(currentTrains[0])" title="Announce this connection">🔊</button></div>`;
+            }
+            
+            let platform1Html = leg1.platform ? `<div class="platform">Platform ${leg1.platform}</div>` : `<div class="platform-tbd">Platform TBC</div>`;
+            let platform2Html = leg2.platform ? `<div class="platform">Platform ${leg2.platform}</div>` : `<div class="platform-tbd">Platform TBC</div>`;
+            
             return `
                 <div class="combined-journey">
-                    ${isHero ? `<div class="hero-label">⭐ RECOMMENDED CONNECTION<button class="speak-btn" onclick="announceConnection(currentTrains[0])" title="Announce this connection">🔊</button></div>` : ''}
+                    ${heroLabelHtml}
                     ${countdown ? `<div class="hero-countdown">${countdown}</div>` : ''}
                     
                     <div class="combined-leg">
                         <div class="leg-header">
                             <div>
-                                <div class="leg-time">${leg1.std}</div>
-                                <div><strong>${stationNames[currentFrom]} → ${stationNames[combinedRouteVia]}</strong></div>
-                            </div>
-                            ${leg1.platform ? `<div class="platform">Platform ${leg1.platform}</div>` : `<div class="platform-tbd">Platform TBC</div>`}
-                        </div>
-                        <div>Arrives ${stationNames[combinedRouteVia]}: ${connection.arrivalAtVia}</div>
-                        ${leg1.operator ? `<div style="font-size: 14px; color: #666;">Operator: ${leg1.operator}</div>` : ''}
-                    </div>
-                    
-                    <div class="connection-time ${connectionClass}">
-                        ${connectionLabel} at ${stationNames[combinedRouteVia]}
-                    </div>
-                    
-                    <div class="combined-leg">
-                        <div class="leg-header">
-                            <div>
-                                <div class="leg-time">${leg2.std}</div>
-                                <div><strong>${stationNames[combinedRouteVia]} → ${stationNames[currentTo]}</strong></div>
-                            </div>
-                            ${leg2.platform ? `<div class="platform">Platform ${leg2.platform}</div>` : `<div class="platform-tbd">Platform TBC</div>`}
-                        </div>
-                        ${leg2.operator ? `<div style="font-size: 14px; color: #666;">Operator: ${leg2.operator}</div>` : ''}
-                    </div>
-                    
-                    <div class="total-journey-time">
-                        Total journey time: ${totalTimeStr}
-                    </div>
-                </div>
-            `;
-        }
-        
-        function getArrivalTime(train, toCrs) {
-            if (train.destination && train.destination[0].crs === toCrs) {
-                return train.sta || train.std;
-            }
-            if (train.subsequentCallingPoints) {
-                for (const list of train.subsequentCallingPoints) {
-                    if (list.callingPoint) {
-                        const stop = list.callingPoint.find(cp => cp.crs === toCrs);
-                        if (stop) return stop.st;
-                    }
-                }
-            }
-            return train.std;
-        }
-        
-        function displayJourney() {
-            const content = document.getElementById('journeyContent');
-            
-            let html = '';
-            
-            // Add results header with refresh button
-            const headerTitle = isCombinedRoute 
-                ? `${stationNames[currentFrom]} → ${stationNames[currentTo]} (via ${stationNames[combinedRouteVia]})`
-                : `${stationNames[currentFrom]} → ${stationNames[currentTo]}`;
-            
-            html += `
-                <div class="results-header">
-                    <h2>${headerTitle}</h2>
-                    <div class="update-info">
-                        <span>Updated ${formatUpdateTime()}</span>
-                        <button class="refresh-btn" onclick="refreshTrains()">
-                            ↻ Refresh
-                        </button>
-                    </div>
-                </div>
-            `;
-            
-            // Handle combined route display differently
-            if (isCombinedRoute) {
-                displayCombinedJourneys(html, content);
-                return;
-            }
-            
-            // Show fallback message if we're displaying all trains
-            if (showingAllTrains) {
-                html += `
-                    <div class="fallback-message">
-                        <strong>No direct trains to ${stationNames[currentTo]} available</strong>
-                        <p>Showing all departing trains from ${stationNames[currentFrom]}</p>
-                    </div>
-                `;
-            }
-            
-            // Find the recommended train (next departing train)
-            const recommendedTrain = currentTrains.length > 0 ? currentTrains[0] : null;
-            
-            if (recommendedTrain) {
-                html += renderHeroTrain(recommendedTrain);
-                
-                // Auto-announce the hero train (only once per load, not on refresh)
-                if (!hasAnnouncedCurrentTrain) {
-                    setTimeout(() => announceHeroTrain(recommendedTrain), 500);
-                    hasAnnouncedCurrentTrain = true;
-                }
-            }
-            
-            // Separate trains into direct and with changes (excluding the hero train)
-            const directTrains = [];
-            const changeTrains = [];
-            
-            currentTrains.forEach((train, idx) => {
-                // Skip the first train as it's the hero
-                if (idx === 0) return;
-                
-                // Check if destination matches directly
-                const isDirect = train.destination && train.destination.some(dest => dest.crs === currentTo);
-                
-                if (isDirect) {
-                    directTrains.push(train);
-                } else {
-                    // Check if train calls at the destination
-                    let callsAtDestination = false;
-                    if (train.subsequentCallingPoints) {
-                        for (const callingPointList of train.subsequentCallingPoints) {
-                            if (callingPointList.callingPoint) {
-                                if (callingPointList.callingPoint.some(cp => cp.crs === currentTo)) {
-                                    callsAtDestination = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    
-                    if (callsAtDestination) {
-                        changeTrains.push(train);
-                    } else if (showingAllTrains) {
-                        // When showing all trains, include everything
-                        train.notToDestination = true;
-                        changeTrains.push(train);
-                    }
-                }
-            });
-            
-            // Only show "Other trains" section if there are more trains
-            if (directTrains.length > 0 || changeTrains.length > 0) {
-                html += `<div class="other-trains-header">OTHER TRAINS</div>`;
-            }
-            
-            // Direct trains section
-            if (directTrains.length > 0) {
-                html += `<div class="section-header">DIRECT TRAINS</div>`;
-                directTrains.forEach((train, index) => {
-                    html += renderTrain(train, index);
-                });
-            } else if (!showingAllTrains) {
-                html += `<div class="section-header">DIRECT TRAINS</div>`;
-                html += `<div class="no-trains">No direct trains available</div>`;
-            }
-            
-            // Trains with changes / alternate destinations section
-            if (changeTrains.length > 0) {
-                if (showingAllTrains) {
-                    html += `<div class="section-header" style="margin-top: 20px;">DEPARTING TRAINS</div>`;
-                } else {
-                    html += `<div class="section-header" style="margin-top: 20px;">TRAINS WITH CHANGES</div>`;
-                }
-                changeTrains.forEach((train, index) => {
-                    html += renderTrain(train, index);
-                });
-            }
-            
-            html += `
-                <button class="back-btn" onclick="goBack()">
-                    ← Back to Routes
-                </button>
-            `;
-            
-            content.innerHTML = html;
-        }
-        
-        function renderHeroTrain(train) {
-            const std = train.std;
-            const etd = train.etd;
-            const destName = train.destination && train.destination[0] ? train.destination[0].locationName : 'Unknown';
-            const destCrs = train.destination && train.destination[0] ? train.destination[0].crs : '';
-            
-          
