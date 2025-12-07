@@ -905,7 +905,13 @@
             // Add countdown if available
             const countdown = calculateCountdown(std, etd);
             if (countdown && etd !== 'Cancelled') {
-                const countdownText = countdown.replace('Departs in ', '').replace(' mins', ' minutes').replace(' min', ' minute');
+                // Convert countdown text for better voice pronunciation
+                let countdownText = countdown.replace('Departs in ', '');
+                countdownText = countdownText.replace(/(\d+)h/g, '$1 hours');
+                countdownText = countdownText.replace(/(\d+)m$/g, '$1 minutes');
+                countdownText = countdownText.replace(/(\d+)m /g, '$1 minutes ');
+                countdownText = countdownText.replace(' mins', ' minutes');
+                countdownText = countdownText.replace(' min', ' minute');
                 announcement += `, ${countdownText}`;
             }
             
