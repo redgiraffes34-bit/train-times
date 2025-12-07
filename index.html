@@ -35,6 +35,11 @@
             margin-bottom: 30px;
             font-size: 28px;
             text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            cursor: pointer;
+        }
+        
+        h1:active {
+            transform: scale(0.98);
         }
         
         .route-buttons {
@@ -282,6 +287,82 @@
             margin-top: 3px;
         }
         
+        .hero-train {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+        
+        .hero-train .hero-label {
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+        
+        .hero-train .hero-time {
+            font-size: 56px;
+            font-weight: bold;
+            line-height: 1;
+            margin-bottom: 10px;
+        }
+        
+        .hero-train .hero-countdown {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            opacity: 0.95;
+        }
+        
+        .hero-train .hero-platform {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.25);
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        
+        .hero-train .hero-description {
+            font-size: 16px;
+            line-height: 1.5;
+            opacity: 0.95;
+        }
+        
+        .hero-train .hero-status {
+            margin-top: 10px;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        
+        .hero-train .hero-status.warning {
+            background: #f39c12;
+        }
+        
+        .hero-train .hero-status.good {
+            background: #27ae60;
+        }
+        
+        .other-trains-header {
+            font-size: 14px;
+            font-weight: 700;
+            color: #999;
+            letter-spacing: 1px;
+            margin: 25px 0 15px 0;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        
         .results-header {
             background: white;
             border-radius: 15px;
@@ -345,7 +426,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>🚆 Train Times</h1>
+        <h1 onclick="goBack()">🚆 Train Times</h1>
         
         <div class="route-buttons" id="routeButtons">
             <button class="route-btn" onclick="getTrains('ASN', 'WAT')">
@@ -503,11 +584,21 @@
                 `;
             }
             
-            // Separate trains into direct and with changes
+            // Find the recommended train (next departing train)
+            const recommendedTrain = currentTrains.length > 0 ? currentTrains[0] : null;
+            
+            if (recommendedTrain) {
+                html += renderHeroTrain(recommendedTrain);
+            }
+            
+            // Separate trains into direct and with changes (excluding the hero train)
             const directTrains = [];
             const changeTrains = [];
             
-            currentTrains.forEach(train => {
+            currentTrains.forEach((train, idx) => {
+                // Skip the first train as it's the hero
+                if (idx === 0) return;
+                
                 // Check if destination matches directly
                 const isDirect = train.destination && train.destination.some(dest => dest.crs === currentTo);
                 
@@ -536,6 +627,11 @@
                     }
                 }
             });
+            
+            // Only show "Other trains" section if there are more trains
+            if (directTrains.length > 0 || changeTrains.length > 0) {
+                html += `<div class="other-trains-header">OTHER TRAINS</div>`;
+            }
             
             // Direct trains section
             if (directTrains.length > 0) {
@@ -567,6 +663,58 @@
             `;
             
             content.innerHTML = html;
+        }
+        
+        function renderHeroTrain(train) {
+            const std = train.std;
+            const etd = train.etd;
+            const destName = train.destination && train.destination[0] ? train.destination[0].locationName : 'Unknown';
+            const destCrs = train.destination && train.destination[0] ? train.destination[0].crs : '';
+            
+            // Calculate countdown
+            const countdown = calculateCountdown(std);
+            
+            // Determine connection type
+            const goesToDestination = train.destination && train.destination.some(dest => dest.crs === currentTo);
+            const callsAtDestination = !goesToDestination && train.subsequentCallingPoints && 
+                train.subsequentCallingPoints.some(list => 
+                    list.callingPoint && list.callingPoint.some(cp => cp.crs === currentTo)
+                );
+            
+            // Build description
+            let description = '';
+            if (goesToDestination) {
+                description = `Direct to ${stationNames[currentTo]}`;
+            } else if (callsAtDestination) {
+                description = `Calls at ${stationNames[currentTo]}`;
+            } else if (destCrs === 'CLJ') {
+                description = `To ${destName} • Frequent connections to ${stationNames[currentTo]}`;
+            } else if (destCrs === 'WOK') {
+                description = `To ${destName} • Check connections to ${stationNames[currentTo]}`;
+            } else {
+                description = `To ${destName}`;
+            }
+            
+            // Status for hero card
+            let statusHtml = '';
+            if (etd === 'Cancelled') {
+                statusHtml = `<div class="hero-status warning">CANCELLED</div>`;
+            } else if (etd && etd !== 'On time' && etd !== std && etd.includes(':')) {
+                statusHtml = `<div class="hero-status warning">Expected: ${etd}</div>`;
+            } else if (train.delayReason) {
+                statusHtml = `<div class="hero-status warning">${train.delayReason}</div>`;
+            }
+            
+            return `
+                <div class="hero-train">
+                    <div class="hero-label">⭐ RECOMMENDED TRAIN</div>
+                    <div class="hero-time">${std}</div>
+                    ${countdown ? `<div class="hero-countdown">${countdown}</div>` : ''}
+                    ${train.platform ? `<div class="hero-platform">Platform ${train.platform}</div>` : `<div class="hero-platform">Platform TBC</div>`}
+                    <div class="hero-description">${description}</div>
+                    ${statusHtml}
+                </div>
+            `;
         }
         
         function renderTrain(train, index) {
