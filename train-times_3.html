@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Train Times</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 28px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .route-buttons {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .route-btn {
+            background: white;
+            border: none;
+            padding: 20px;
+            border-radius: 15px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #667eea;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: left;
+        }
+        
+        .route-btn:active {
+            transform: scale(0.98);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .route-btn .from-to {
+            display: block;
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .results {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: none;
+        }
+        
+        .results.show {
+            display: block;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .journey {
+            margin-bottom: 20px;
+        }
+        
+        .journey-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .departure-time {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .platform {
+            background: #667eea;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .journey-details {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+        
+        .status.on-time {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status.delayed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .nav-btn {
+            flex: 1;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-btn:active {
+            transform: scale(0.98);
+            background: #5568d3;
+        }
+        
+        .nav-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .back-btn {
+            background: #f0f0f0;
+            color: #666;
+            border: none;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .back-btn:active {
+            transform: scale(0.98);
+            background: #e0e0e0;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .section-header {
+            font-size: 12px;
+            font-weight: 700;
+            color: #999;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .no-trains {
+            color: #999;
+            font-style: italic;
+            padding: 10px 0;
+            font-size: 14px;
+        }
+        
+        .change-info {
+            color: #f39c12;
+            font-weight: 600;
+            font-size: 13px;
+            margin-top: 3px;
+        }
+        
+        .journey-compact {
+            margin-top: 10px;
+            padding-top: 15px;
+            border-top: 1px solid #f0f0f0;
+        }
+        
+        .platform-tbd {
+            background: #999;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .fallback-message {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        
+        .fallback-message strong {
+            display: block;
+            color: #856404;
+            margin-bottom: 5px;
+            font-size: 15px;
+        }
+        
+        .fallback-message p {
+            color: #856404;
+            font-size: 13px;
+            margin: 0;
+        }
+        
+        .connection-info {
+            color: #3498db;
+            font-weight: 600;
+            font-size: 13px;
+            margin-top: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚆 Train Times</h1>
+        
+        <div class="route-buttons" id="routeButtons">
+            <button class="route-btn" onclick="getTrains('ASN', 'WAT')">
+                <div>Addlestone → Waterloo</div>
+                <span class="from-to">Next departure</span>
+            </button>
+            <button class="route-btn" onclick="getTrains('WYB', 'WAT')">
+                <div>Weybridge → Waterloo</div>
+                <span class="from-to">Next departure</span>
+            </button>
+            <button class="route-btn" onclick="getTrains('WAT', 'WYB')">
+                <div>Waterloo → Weybridge</div>
+                <span class="from-to">Next departure</span>
+            </button>
+            <button class="route-btn" onclick="getTrains('WAT', 'ASN')">
+                <div>Waterloo → Addlestone</div>
+                <span class="from-to">Next departure</span>
+            </button>
+        </div>
+        
+        <div class="results" id="results">
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <div>Loading train times...</div>
+            </div>
+            <div id="journeyContent"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentTrains = [];
+        let currentIndex = 0;
+        let currentFrom = '';
+        let currentTo = '';
+        let showingAllTrains = false;
+        
+        const WORKER_URL = 'https://train-times-api.redgiraffes74.workers.dev';
+        
+        const stationNames = {
+            'ASN': 'Addlestone',
+            'WYB': 'Weybridge',
+            'WAT': 'Waterloo'
+        };
+        
+        async function getTrains(from, to) {
+            currentFrom = from;
+            currentTo = to;
+            currentIndex = 0;
+            
+            document.getElementById('routeButtons').style.display = 'none';
+            document.getElementById('results').classList.add('show');
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('journeyContent').innerHTML = '';
+            
+            try {
+                const response = await fetch(`${WORKER_URL}?from=${from}&to=${to}`);
+                const data = await response.json();
+                
+                if (data.trainServices && data.trainServices.length > 0) {
+                    currentTrains = data.trainServices;
+                    showingAllTrains = data.showingAllTrains || false;
+                    displayJourney();
+                } else {
+                    showError('No trains found for this route.');
+                }
+            } catch (error) {
+                showError('Unable to fetch train times. Please try again.');
+            }
+            
+            document.getElementById('loading').style.display = 'none';
+        }
+        
+        function displayJourney() {
+            const content = document.getElementById('journeyContent');
+            
+            let html = '';
+            
+            // Show fallback message if we're displaying all trains
+            if (showingAllTrains) {
+                html += `
+                    <div class="fallback-message">
+                        <strong>No direct trains to ${stationNames[currentTo]} available</strong>
+                        <p>Showing all departing trains from ${stationNames[currentFrom]}</p>
+                    </div>
+                `;
+            }
+            
+            // Separate trains into direct and with changes
+            const directTrains = [];
+            const changeTrains = [];
+            
+            currentTrains.forEach(train => {
+                // Check if destination matches directly
+                const isDirect = train.destination && train.destination.some(dest => dest.crs === currentTo);
+                
+                if (isDirect) {
+                    directTrains.push(train);
+                } else {
+                    // Check if train calls at the destination
+                    let callsAtDestination = false;
+                    if (train.subsequentCallingPoints) {
+                        for (const callingPointList of train.subsequentCallingPoints) {
+                            if (callingPointList.callingPoint) {
+                                if (callingPointList.callingPoint.some(cp => cp.crs === currentTo)) {
+                                    callsAtDestination = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (callsAtDestination) {
+                        changeTrains.push(train);
+                    } else if (showingAllTrains) {
+                        // When showing all trains, include everything
+                        train.notToDestination = true;
+                        changeTrains.push(train);
+                    }
+                }
+            });
+            
+            // Direct trains section
+            if (directTrains.length > 0) {
+                html += `<div class="section-header">DIRECT TRAINS</div>`;
+                directTrains.forEach((train, index) => {
+                    html += renderTrain(train, index);
+                });
+            } else if (!showingAllTrains) {
+                html += `<div class="section-header">DIRECT TRAINS</div>`;
+                html += `<div class="no-trains">No direct trains available</div>`;
+            }
+            
+            // Trains with changes / alternate destinations section
+            if (changeTrains.length > 0) {
+                if (showingAllTrains) {
+                    html += `<div class="section-header" style="margin-top: 20px;">DEPARTING TRAINS</div>`;
+                } else {
+                    html += `<div class="section-header" style="margin-top: 20px;">TRAINS WITH CHANGES</div>`;
+                }
+                changeTrains.forEach((train, index) => {
+                    html += renderTrain(train, index);
+                });
+            }
+            
+            html += `
+                <button class="back-btn" onclick="goBack()">
+                    ← Back to Routes
+                </button>
+            `;
+            
+            content.innerHTML = html;
+        }
+        
+        function renderTrain(train, index) {
+            const etd = train.etd || train.std;
+            const isDelayed = train.etd && train.etd !== 'On time' && train.etd !== train.std;
+            const destName = train.destination && train.destination[0] ? train.destination[0].locationName : 'Unknown';
+            const destCrs = train.destination && train.destination[0] ? train.destination[0].crs : '';
+            
+            // Determine if this train goes to our desired destination
+            const goesToDestination = train.destination && train.destination.some(dest => dest.crs === currentTo);
+            const callsAtDestination = !goesToDestination && train.subsequentCallingPoints && 
+                train.subsequentCallingPoints.some(list => 
+                    list.callingPoint && list.callingPoint.some(cp => cp.crs === currentTo)
+                );
+            
+            // Get connection info
+            let connectionInfo = '';
+            if (callsAtDestination) {
+                connectionInfo = `<div class="change-info">Calls at ${stationNames[currentTo]}</div>`;
+            } else if (train.notToDestination) {
+                // Check if destination is a known connection point
+                if (destCrs === 'CLJ') {
+                    connectionInfo = `<div class="connection-info">→ Frequent connections to ${stationNames[currentTo]}</div>`;
+                } else if (destCrs === 'WOK') {
+                    connectionInfo = `<div class="connection-info">→ Check connections to ${stationNames[currentTo]}</div>`;
+                } else {
+                    connectionInfo = `<div class="connection-info">→ Check connections</div>`;
+                }
+            }
+            
+            return `
+                <div class="journey ${index > 0 ? 'journey-compact' : ''}">
+                    <div class="journey-header">
+                        <div class="departure-time">${etd}</div>
+                        ${train.platform ? `<div class="platform">Platform ${train.platform}</div>` : '<div class="platform-tbd">TBD</div>'}
+                    </div>
+                    <div class="journey-details">
+                        <div><strong>${stationNames[currentFrom]} → ${destName}</strong></div>
+                        ${connectionInfo}
+                        <div>Scheduled: ${train.std}</div>
+                        ${train.operator ? `<div>Operator: ${train.operator}</div>` : ''}
+                        ${isDelayed ? `<div class="status delayed">${train.delayReason || 'Delayed'}</div>` : `<div class="status on-time">On time</div>`}
+                    </div>
+                </div>
+            `;
+        }
+        
+        function goBack() {
+            document.getElementById('results').classList.remove('show');
+            document.getElementById('routeButtons').style.display = 'grid';
+        }
+        
+        function showError(message) {
+            document.getElementById('journeyContent').innerHTML = `
+                <div class="error">${message}</div>
+                <button class="back-btn" onclick="goBack()">← Back to Routes</button>
+            `;
+        }
+    </script>
+</body>
+</html>
