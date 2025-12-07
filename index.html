@@ -761,9 +761,20 @@
             return `${mins} min${mins > 1 ? 's' : ''} ago`;
         }
         
-        function calculateCountdown(departureTime) {
+        function calculateCountdown(departureTime, etd) {
+            // Don't show countdown for cancelled trains
+            if (etd === 'Cancelled') {
+                return '';
+            }
+            
+            // Use expected time if it's a time string, otherwise use scheduled time
+            let timeToUse = departureTime;
+            if (etd && etd.includes(':')) {
+                timeToUse = etd;
+            }
+            
             const now = new Date();
-            const [hours, minutes] = departureTime.split(':').map(Number);
+            const [hours, minutes] = timeToUse.split(':').map(Number);
             const departure = new Date();
             departure.setHours(hours, minutes, 0, 0);
             
@@ -831,7 +842,7 @@
                 connectionLabel = `✓ Comfortable ${connectionMins} min connection`;
             }
             
-            const countdown = calculateCountdown(leg1.std);
+            const countdown = calculateCountdown(leg1.std, leg1.etd);
             
             return `
                 <div class="combined-journey">
@@ -1013,7 +1024,7 @@
             const destCrs = train.destination && train.destination[0] ? train.destination[0].crs : '';
             
             // Calculate countdown
-            const countdown = calculateCountdown(std);
+            const countdown = calculateCountdown(std, etd);
             
             // Determine connection type
             const goesToDestination = train.destination && train.destination.some(dest => dest.crs === currentTo);
@@ -1146,7 +1157,7 @@
             }
             
             // Calculate countdown
-            const countdown = calculateCountdown(std);
+            const countdown = calculateCountdown(std, etd);
             const countdownHtml = countdown ? `<div class="countdown">${countdown}</div>` : '';
             
             return `
