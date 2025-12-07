@@ -493,6 +493,7 @@
         <h1 onclick="goBack()">🚆 Train Times</h1>
         
         <div class="route-buttons" id="routeButtons">
+            <!-- FROM ADDLESTONE -->
             <button class="route-btn" onclick="getTrains('ASN', 'WAT')">
                 <div>Addlestone → Waterloo</div>
                 <span class="from-to">Next departure</span>
@@ -501,29 +502,35 @@
                 <div>Addlestone → Waterloo</div>
                 <span class="from-to">Via Weybridge (with connection)</span>
             </button>
-            <button class="route-btn" onclick="getCombinedRoute('WAT', 'WYB', 'ASN')">
-                <div>Waterloo → Addlestone</div>
-                <span class="from-to">Via Weybridge (with connection)</span>
-            </button>
             <button class="route-btn" onclick="getCombinedRoute('ASN', 'SNS', 'WNR')">
                 <div>Addlestone → Windsor & Eton Riverside</div>
                 <span class="from-to">Via Staines (with connection)</span>
             </button>
-            <button class="route-btn" onclick="getCombinedRoute('WNR', 'SNS', 'ASN')">
-                <div>Windsor & Eton Riverside → Addlestone</div>
-                <span class="from-to">Via Staines (with connection)</span>
-            </button>
+            
+            <!-- FROM WEYBRIDGE -->
             <button class="route-btn" onclick="getTrains('WYB', 'WAT')">
                 <div>Weybridge → Waterloo</div>
                 <span class="from-to">Next departure</span>
+            </button>
+            
+            <!-- FROM WATERLOO -->
+            <button class="route-btn" onclick="getTrains('WAT', 'ASN')">
+                <div>Waterloo → Addlestone</div>
+                <span class="from-to">Next departure</span>
+            </button>
+            <button class="route-btn" onclick="getCombinedRoute('WAT', 'WYB', 'ASN')">
+                <div>Waterloo → Addlestone</div>
+                <span class="from-to">Via Weybridge (with connection)</span>
             </button>
             <button class="route-btn" onclick="getTrains('WAT', 'WYB')">
                 <div>Waterloo → Weybridge</div>
                 <span class="from-to">Next departure</span>
             </button>
-            <button class="route-btn" onclick="getTrains('WAT', 'ASN')">
-                <div>Waterloo → Addlestone</div>
-                <span class="from-to">Next departure</span>
+            
+            <!-- FROM WINDSOR -->
+            <button class="route-btn" onclick="getCombinedRoute('WNR', 'SNS', 'ASN')">
+                <div>Windsor & Eton Riverside → Addlestone</div>
+                <span class="from-to">Via Staines (with connection)</span>
             </button>
         </div>
         
@@ -610,6 +617,19 @@
                 
                 const leg1Trains = leg1Data.trainServices || [];
                 const leg2Trains = leg2Data.trainServices || [];
+                
+                // Check if either leg is showing all trains (no actual service to destination)
+                if (leg1Data.showingAllTrains) {
+                    showError(`No trains found from ${stationNames[from]} to ${stationNames[via]}.`);
+                    document.getElementById('loading').style.display = 'none';
+                    return;
+                }
+                
+                if (leg2Data.showingAllTrains) {
+                    showError(`No trains found from ${stationNames[via]} to ${stationNames[to]}. This connection is not currently viable.`);
+                    document.getElementById('loading').style.display = 'none';
+                    return;
+                }
                 
                 if (leg1Trains.length === 0 || leg2Trains.length === 0) {
                     showError('No connecting trains found for this route.');
