@@ -468,6 +468,43 @@
             background: #5568d3;
         }
         
+        .voice-toggle {
+            background: transparent;
+            border: 2px solid white;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+        
+        .voice-toggle:active {
+            transform: scale(0.95);
+        }
+        
+        .voice-toggle.disabled {
+            opacity: 0.5;
+        }
+        
+        .speak-btn {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 20px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        
+        .speak-btn:active {
+            transform: scale(0.95);
+            background: #229954;
+        }
+        
         .countdown {
             color: #27ae60;
             font-weight: 600;
@@ -491,6 +528,9 @@
 <body>
     <div class="container">
         <h1 onclick="goBack()">🚆 Train Times</h1>
+        <button class="voice-toggle" onclick="toggleVoice()" id="voiceToggle">
+            🔊
+        </button>
         
         <div class="route-buttons" id="routeButtons">
             <!-- FROM ADDLESTONE -->
@@ -553,6 +593,8 @@
         let autoRefreshInterval = null;
         let isCombinedRoute = false;
         let combinedRouteVia = '';
+        let voiceEnabled = localStorage.getItem('voiceEnabled') !== 'false'; // Default true
+        let hasAnnouncedCurrentTrain = false;
         
         const WORKER_URL = 'https://train-times-api.redgiraffes74.workers.dev';
         
@@ -568,6 +610,7 @@
             currentFrom = from;
             currentTo = to;
             currentIndex = 0;
+            hasAnnouncedCurrentTrain = false; // Reset for new route
             
             document.getElementById('routeButtons').style.display = 'none';
             document.getElementById('results').classList.add('show');
@@ -599,6 +642,7 @@
             currentTo = to;
             combinedRouteVia = via;
             isCombinedRoute = true;
+            hasAnnouncedCurrentTrain = false; // Reset for new route
             
             document.getElementById('routeButtons').style.display = 'none';
             document.getElementById('results').classList.add('show');
@@ -794,6 +838,100 @@
             return `Departs in ${hoursRemaining}h ${minsRemaining}m`;
         }
         
+        function toggleVoice() {
+            voiceEnabled = !voiceEnabled;
+            localStorage.setItem('voiceEnabled', voiceEnabled);
+            updateVoiceButton();
+            
+            if (voiceEnabled) {
+                speak("Voice announcements enabled");
+            }
+        }
+        
+        function updateVoiceButton() {
+            const btn = document.getElementById('voiceToggle');
+            if (btn) {
+                if (voiceEnabled) {
+                    btn.classList.remove('disabled');
+                    btn.textContent = '🔊';
+                } else {
+                    btn.classList.add('disabled');
+                    btn.textContent = '🔇';
+                }
+            }
+        }
+        
+        function speak(text) {
+            if (!voiceEnabled) return;
+            
+            // Cancel any ongoing speech
+            window.speechSynthesis.cancel();
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 0.9; // Slightly slower for clarity
+            utterance.pitch = 1.0;
+            utterance.volume = 1.0;
+            
+            // Try to use a British English voice if available
+            const voices = window.speechSynthesis.getVoices();
+            const britishVoice = voices.find(voice => 
+                voice.lang.startsWith('en-GB') || voice.name.includes('British') || voice.name.includes('UK')
+            );
+            if (britishVoice) {
+                utterance.voice = britishVoice;
+            }
+            
+            window.speechSynthesis.speak(utterance);
+        }
+        
+        function announceHeroTrain(train) {
+            if (!voiceEnabled) return;
+            
+            const std = train.std;
+            const etd = train.etd;
+            const destName = train.destination && train.destination[0] ? train.destination[0].locationName : 'Unknown';
+            const platform = train.platform || 'to be confirmed';
+            
+            let announcement = '';
+            
+            if (isCombinedRoute) {
+                // For combined routes, announce the connection
+                announcement = `The next train to ${stationNames[currentTo]} via ${stationNames[combinedRouteVia]} `;
+                announcement += `departs at ${std.replace(':', ' ')} from platform ${platform}`;
+            } else {
+                announcement = `The next train to ${destName} departs at ${std.replace(':', ' ')} from platform ${platform}`;
+            }
+            
+            // Add countdown if available
+            const countdown = calculateCountdown(std, etd);
+            if (countdown && etd !== 'Cancelled') {
+                const countdownText = countdown.replace('Departs in ', '').replace(' mins', ' minutes').replace(' min', ' minute');
+                announcement += `, ${countdownText}`;
+            }
+            
+            // Add delay/cancellation info
+            if (etd === 'Cancelled') {
+                announcement = `This service has been cancelled. ${announcement}`;
+            } else if (etd && etd.includes(':') && etd !== std) {
+                announcement += `. This train is delayed and is now expected at ${etd.replace(':', ' ')}`;
+            }
+            
+            speak(announcement);
+        }
+        
+        function announceConnection(connection) {
+            if (!voiceEnabled) return;
+            
+            const leg1 = connection.leg1;
+            const connectionMins = connection.connectionTime;
+            
+            let announcement = `The next connection to ${stationNames[currentTo]} via ${stationNames[combinedRouteVia]} `;
+            announcement += `departs at ${leg1.std.replace(':', ' ')} from platform ${leg1.platform || 'to be confirmed'}`;
+            announcement += `. Change at ${stationNames[combinedRouteVia]} with a ${connectionMins} minute connection`;
+            
+            speak(announcement);
+        }
+        
         function displayCombinedJourneys(htmlPrefix, content) {
             let html = htmlPrefix;
             
@@ -803,6 +941,12 @@
             topConnections.forEach((connection, idx) => {
                 html += renderCombinedJourney(connection, idx === 0);
             });
+            
+            // Auto-announce the first connection
+            if (topConnections.length > 0 && !hasAnnouncedCurrentTrain) {
+                setTimeout(() => announceConnection(topConnections[0]), 500);
+                hasAnnouncedCurrentTrain = true;
+            }
             
             // Show other connections
             if (currentTrains.length > 2) {
@@ -846,7 +990,7 @@
             
             return `
                 <div class="combined-journey">
-                    ${isHero ? `<div class="hero-label">⭐ RECOMMENDED CONNECTION</div>` : ''}
+                    ${isHero ? `<div class="hero-label">⭐ RECOMMENDED CONNECTION<button class="speak-btn" onclick="announceConnection(currentTrains[0])" title="Announce this connection">🔊</button></div>` : ''}
                     ${countdown ? `<div class="hero-countdown">${countdown}</div>` : ''}
                     
                     <div class="combined-leg">
@@ -941,6 +1085,12 @@
             
             if (recommendedTrain) {
                 html += renderHeroTrain(recommendedTrain);
+                
+                // Auto-announce the hero train (only once per load, not on refresh)
+                if (!hasAnnouncedCurrentTrain) {
+                    setTimeout(() => announceHeroTrain(recommendedTrain), 500);
+                    hasAnnouncedCurrentTrain = true;
+                }
             }
             
             // Separate trains into direct and with changes (excluding the hero train)
@@ -1059,7 +1209,10 @@
             
             return `
                 <div class="hero-train">
-                    <div class="hero-label">⭐ RECOMMENDED TRAIN</div>
+                    <div class="hero-label">
+                        ⭐ RECOMMENDED TRAIN
+                        <button class="speak-btn" onclick="announceHeroTrain(currentTrains[0])" title="Announce this train">🔊</button>
+                    </div>
                     <div class="hero-time">${std}</div>
                     ${countdown ? `<div class="hero-countdown">${countdown}</div>` : ''}
                     ${train.platform ? `<div class="hero-platform">Platform ${train.platform}</div>` : `<div class="hero-platform">Platform TBC</div>`}
@@ -1205,6 +1358,7 @@
             stopAutoRefresh();
             isCombinedRoute = false;
             combinedRouteVia = '';
+            hasAnnouncedCurrentTrain = false;
             document.getElementById('results').classList.remove('show');
             document.getElementById('routeButtons').style.display = 'grid';
         }
@@ -1215,6 +1369,19 @@
                 <button class="back-btn" onclick="goBack()">← Back to Routes</button>
             `;
         }
+        
+        // Initialize voice button on page load
+        window.addEventListener('load', () => {
+            updateVoiceButton();
+            
+            // Load voices (needed for speech synthesis)
+            if ('speechSynthesis' in window) {
+                speechSynthesis.getVoices();
+                speechSynthesis.addEventListener('voiceschanged', () => {
+                    speechSynthesis.getVoices();
+                });
+            }
+        });
     </script>
 </body>
 </html>
