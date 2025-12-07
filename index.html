@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Train Times</title>
@@ -279,6 +279,66 @@
             font-size: 15px;
             margin-top: 3px;
         }
+        
+        .results-header {
+            background: white;
+            border-radius: 15px;
+            padding: 15px 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .results-header h2 {
+            margin: 0 0 5px 0;
+            font-size: 20px;
+            color: #333;
+        }
+        
+        .results-header .update-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .refresh-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .refresh-btn:active {
+            transform: scale(0.95);
+            background: #5568d3;
+        }
+        
+        .countdown {
+            color: #27ae60;
+            font-weight: 600;
+            font-size: 14px;
+            margin-top: 3px;
+        }
+        
+        .status.cancelled {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .expected-time {
+            color: #e67e22;
+            font-weight: 600;
+            font-size: 14px;
+            margin-top: 3px;
+        }
     </style>
 </head>
 <body>
@@ -319,6 +379,8 @@
         let currentFrom = '';
         let currentTo = '';
         let showingAllTrains = false;
+        let lastUpdateTime = null;
+        let autoRefreshInterval = null;
         
         const WORKER_URL = 'https://train-times-api.redgiraffes74.workers.dev';
         
@@ -345,7 +407,9 @@
                 if (data.trainServices && data.trainServices.length > 0) {
                     currentTrains = data.trainServices;
                     showingAllTrains = data.showingAllTrains || false;
+                    lastUpdateTime = new Date();
                     displayJourney();
+                    startAutoRefresh();
                 } else {
                     showError('No trains found for this route.');
                 }
@@ -356,10 +420,76 @@
             document.getElementById('loading').style.display = 'none';
         }
         
+        function refreshTrains() {
+            if (currentFrom && currentTo) {
+                getTrains(currentFrom, currentTo);
+            }
+        }
+        
+        function startAutoRefresh() {
+            // Clear any existing interval
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+            // Refresh every 60 seconds
+            autoRefreshInterval = setInterval(refreshTrains, 60000);
+        }
+        
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+        }
+        
+        function formatUpdateTime() {
+            if (!lastUpdateTime) return '';
+            const now = new Date();
+            const diff = Math.floor((now - lastUpdateTime) / 1000);
+            if (diff < 60) return 'Just now';
+            const mins = Math.floor(diff / 60);
+            return `${mins} min${mins > 1 ? 's' : ''} ago`;
+        }
+        
+        function calculateCountdown(departureTime) {
+            const now = new Date();
+            const [hours, minutes] = departureTime.split(':').map(Number);
+            const departure = new Date();
+            departure.setHours(hours, minutes, 0, 0);
+            
+            // Handle trains after midnight
+            if (departure < now) {
+                departure.setDate(departure.getDate() + 1);
+            }
+            
+            const diff = Math.floor((departure - now) / 60000); // minutes
+            
+            if (diff < 0) return '';
+            if (diff === 0) return 'Departing now';
+            if (diff === 1) return 'Departs in 1 min';
+            if (diff < 60) return `Departs in ${diff} mins`;
+            const hours = Math.floor(diff / 60);
+            const mins = diff % 60;
+            return `Departs in ${hours}h ${mins}m`;
+        }
+        
         function displayJourney() {
             const content = document.getElementById('journeyContent');
             
             let html = '';
+            
+            // Add results header with refresh button
+            html += `
+                <div class="results-header">
+                    <h2>${stationNames[currentFrom]} → ${stationNames[currentTo]}</h2>
+                    <div class="update-info">
+                        <span>Updated ${formatUpdateTime()}</span>
+                        <button class="refresh-btn" onclick="refreshTrains()">
+                            ↻ Refresh
+                        </button>
+                    </div>
+                </div>
+            `;
             
             // Show fallback message if we're displaying all trains
             if (showingAllTrains) {
@@ -438,8 +568,8 @@
         }
         
         function renderTrain(train, index) {
-            const etd = train.etd || train.std;
-            const isDelayed = train.etd && train.etd !== 'On time' && train.etd !== train.std;
+            const std = train.std;
+            const etd = train.etd;
             const destName = train.destination && train.destination[0] ? train.destination[0].locationName : 'Unknown';
             const destCrs = train.destination && train.destination[0] ? train.destination[0].crs : '';
             
@@ -454,21 +584,15 @@
             let durationText = '';
             let arrivalTime = '';
             
-            console.log('Train:', train.std, 'to', destName, 'Looking for:', currentTo);
-            
             // Always try to calculate duration to wherever the train is actually going
             if (train.destination && train.destination[0]) {
-                // For direct trains or trains where we just want to show time to final destination
                 if (train.sta) {
                     arrivalTime = train.sta;
-                    console.log('Using sta:', arrivalTime);
                 } else if (train.subsequentCallingPoints && train.subsequentCallingPoints.length > 0) {
-                    // Find the last calling point to get the final arrival time
                     const lastList = train.subsequentCallingPoints[train.subsequentCallingPoints.length - 1];
                     if (lastList.callingPoint && lastList.callingPoint.length > 0) {
                         const lastStop = lastList.callingPoint[lastList.callingPoint.length - 1];
                         arrivalTime = lastStop.st;
-                        console.log('Using last calling point:', lastStop.locationName, arrivalTime);
                     }
                 }
             }
@@ -480,18 +604,14 @@
                         const destStop = list.callingPoint.find(cp => cp.crs === currentTo);
                         if (destStop) {
                             arrivalTime = destStop.st;
-                            console.log('Found calling point at destination, arrival:', arrivalTime);
                             break;
                         }
                     }
                 }
             }
             
-            console.log('Final arrival time:', arrivalTime, 'Departure:', train.std);
-            
             if (arrivalTime && train.std) {
                 const duration = calculateDuration(train.std, arrivalTime);
-                console.log('Calculated duration:', duration);
                 if (duration) {
                     durationText = `<div class="duration">Journey: ${duration}</div>`;
                 }
@@ -502,7 +622,6 @@
             if (callsAtDestination) {
                 connectionInfo = `<div class="change-info">Calls at ${stationNames[currentTo]}</div>`;
             } else if (train.notToDestination) {
-                // Check if destination is a known connection point
                 if (destCrs === 'CLJ') {
                     connectionInfo = `<div class="connection-info">→ Frequent connections to ${stationNames[currentTo]}</div>`;
                 } else if (destCrs === 'WOK') {
@@ -512,19 +631,47 @@
                 }
             }
             
+            // Status handling - following recommendations #1 and #2
+            let statusHtml = '';
+            let expectedTimeHtml = '';
+            
+            if (etd === 'Cancelled') {
+                statusHtml = '<div class="status cancelled">CANCELLED</div>';
+            } else if (etd && etd !== 'On time' && etd !== std) {
+                // etd is a different time
+                if (etd.includes(':')) {
+                    expectedTimeHtml = `<div class="expected-time">Expected: ${etd}</div>`;
+                    statusHtml = '<div class="status delayed">Delayed</div>';
+                } else if (etd === 'Delayed') {
+                    statusHtml = '<div class="status delayed">Delayed – check boards</div>';
+                }
+            } else {
+                statusHtml = '<div class="status on-time">On time</div>';
+            }
+            
+            // Add delay reason if present
+            if (train.delayReason && etd !== 'Cancelled') {
+                statusHtml += `<div class="status delayed" style="margin-top: 5px;">${train.delayReason}</div>`;
+            }
+            
+            // Calculate countdown
+            const countdown = calculateCountdown(std);
+            const countdownHtml = countdown ? `<div class="countdown">${countdown}</div>` : '';
+            
             return `
                 <div class="journey ${index > 0 ? 'journey-compact' : ''}">
                     <div class="journey-header">
-                        <div class="departure-time">${etd}</div>
-                        ${train.platform ? `<div class="platform">Platform ${train.platform}</div>` : '<div class="platform-tbd">TBD</div>'}
+                        <div class="departure-time">${std}</div>
+                        ${train.platform ? `<div class="platform">Platform ${train.platform}</div>` : '<div class="platform-tbd">Platform TBC</div>'}
                     </div>
                     <div class="journey-details">
                         <div><strong>${stationNames[currentFrom]} → ${destName}</strong></div>
                         ${connectionInfo}
+                        ${countdownHtml}
                         ${durationText}
-                        <div>Scheduled: ${train.std}</div>
+                        ${expectedTimeHtml}
                         ${train.operator ? `<div>Operator: ${train.operator}</div>` : ''}
-                        ${isDelayed ? `<div class="status delayed">${train.delayReason || 'Delayed'}</div>` : `<div class="status on-time">On time</div>`}
+                        ${statusHtml}
                     </div>
                 </div>
             `;
@@ -553,6 +700,7 @@
         }
         
         function goBack() {
+            stopAutoRefresh();
             document.getElementById('results').classList.remove('show');
             document.getElementById('routeButtons').style.display = 'grid';
         }
