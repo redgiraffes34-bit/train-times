@@ -171,4 +171,486 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border-radius: 20px;
-            padding: 2
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+        
+        .hero-train .hero-label {
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+        
+        .hero-train .hero-time { font-size: 56px; font-weight: bold; line-height: 1; margin-bottom: 10px; }
+        .hero-train .hero-countdown { font-size: 24px; font-weight: 600; margin-bottom: 15px; opacity: 0.95; }
+        
+        .hero-train .hero-platform {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.25);
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        
+        .hero-train .hero-description { font-size: 16px; line-height: 1.5; opacity: 0.95; }
+        
+        .hero-train .hero-status {
+            margin-top: 10px;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        
+        .hero-train .hero-status.warning { background: #f39c12; }
+        .hero-train .hero-status.good { background: #27ae60; }
+        
+        .other-trains-header {
+            font-size: 14px;
+            font-weight: 700;
+            color: #999;
+            letter-spacing: 1px;
+            margin: 25px 0 15px 0;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .combined-journey {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .combined-leg { padding: 15px 0; }
+        .combined-leg:first-child { padding-top: 0; }
+        .combined-leg:not(:last-child) { border-bottom: 2px dashed #e0e0e0; }
+        
+        .leg-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .leg-time { font-size: 28px; font-weight: bold; color: #667eea; }
+        
+        .connection-time {
+            background: #fff3cd;
+            color: #856404;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            text-align: center;
+            margin: 10px 0;
+        }
+        
+        .connection-time.good { background: #d4edda; color: #155724; }
+        .connection-time.tight { background: #f8d7da; color: #721c24; }
+        
+        .total-journey-time {
+            background: #667eea;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-weight: 600;
+            text-align: center;
+            margin-top: 15px;
+        }
+        
+        .results-header {
+            background: white;
+            border-radius: 15px;
+            padding: 15px 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .results-header h2 { margin: 0 0 5px 0; font-size: 20px; color: #333; }
+        
+        .results-header .update-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .refresh-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .refresh-btn:active { transform: scale(0.95); background: #5568d3; }
+        
+        .voice-toggle {
+            background: transparent;
+            border: 2px solid white;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+        
+        .voice-toggle:active { transform: scale(0.95); }
+        .voice-toggle.disabled { opacity: 0.5; }
+        
+        .speak-btn {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 20px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        
+        .speak-btn:active { transform: scale(0.95); background: #229954; }
+        
+        .countdown { color: #27ae60; font-weight: 600; font-size: 14px; margin-top: 3px; }
+        .status.cancelled { background: #e74c3c; color: white; }
+        .expected-time { color: #e67e22; font-weight: 600; font-size: 14px; margin-top: 3px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 onclick="goBack()">🚆 Train Times</h1>
+        <button class="voice-toggle" onclick="toggleVoice()" id="voiceToggle">
+            🔊
+        </button>
+        
+        <div class="route-buttons" id="routeButtons">
+            <button class="route-btn" onclick="getTrains('ASN', 'WAT')">
+                <div>Addlestone → Waterloo</div>
+                <span class="from-to">Next departure</span>
+            </button>
+            <button class="route-btn" onclick="getCombinedRoute('ASN', 'WYB', 'WAT')">
+                <div>Addlestone → Waterloo</div>
+                <span class="from-to">Via Weybridge (with connection)</span>
+            </button>
+            <button class="route-btn" onclick="getCombinedRoute('ASN', 'SNS', 'WNR')">
+                <div>Addlestone → Windsor & Eton Riverside</div>
+                <span class="from-to">Via Staines (with connection)</span>
+            </button>
+            
+            <button class="route-btn" onclick="getTrains('WYB', 'WAT')">
+                <div>Weybridge → Waterloo</div>
+                <span class="from-to">Next departure</span>
+            </button>
+            
+            <button class="route-btn" onclick="getTrains('WAT', 'ASN')">
+                <div>Waterloo → Addlestone</div>
+                <span class="from-to">Next departure</span>
+            </button>
+            <button class="route-btn" onclick="getCombinedRoute('WAT', 'WYB', 'ASN')">
+                <div>Waterloo → Addlestone</div>
+                <span class="from-to">Via Weybridge (with connection)</span>
+            </button>
+            <button class="route-btn" onclick="getTrains('WAT', 'WYB')">
+                <div>Waterloo → Weybridge</div>
+                <span class="from-to">Next departure</span>
+            </button>
+            
+            <button class="route-btn" onclick="getCombinedRoute('WNR', 'SNS', 'ASN')">
+                <div>Windsor & Eton Riverside → Addlestone</div>
+                <span class="from-to">Via Staines (with connection)</span>
+            </button>
+        </div>
+        
+        <div class="results" id="results">
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <div>Loading train times...</div>
+            </div>
+            <div id="journeyContent"></div>
+        </div>
+    </div>
+
+    <script>
+        console.log("Script starting...");
+
+        // GLOBAL VARIABLES
+        let currentTrains = [];
+        let currentIndex = 0;
+        let currentFrom = '';
+        let currentTo = '';
+        let showingAllTrains = false;
+        let lastUpdateTime = null;
+        let autoRefreshInterval = null;
+        let isCombinedRoute = false;
+        let combinedRouteVia = '';
+        let voiceEnabled = true; // Default to true if localStorage fails
+        let hasAnnouncedCurrentTrain = false;
+        
+        const WORKER_URL = 'https://train-times-api.redgiraffes74.workers.dev';
+        
+        const stationNames = {
+            'ASN': 'Addlestone',
+            'WYB': 'Weybridge',
+            'WAT': 'Waterloo',
+            'SNS': 'Staines',
+            'WNR': 'Windsor & Eton Riverside',
+            'WOK': 'Woking',
+            'CLJ': 'Clapham Junction'
+        };
+
+        // Initialize Settings safely
+        try {
+            const storedVoice = localStorage.getItem('voiceEnabled');
+            if (storedVoice !== null) {
+                voiceEnabled = storedVoice !== 'false';
+            }
+        } catch (e) {
+            console.warn('LocalStorage not available, using defaults');
+        }
+
+        // --- CORE FUNCTIONS ---
+
+        async function getTrains(from, to) {
+            currentFrom = from;
+            currentTo = to;
+            currentIndex = 0;
+            hasAnnouncedCurrentTrain = false;
+            
+            document.getElementById('routeButtons').style.display = 'none';
+            document.getElementById('results').classList.add('show');
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('journeyContent').innerHTML = '';
+            
+            try {
+                const response = await fetch(`${WORKER_URL}?from=${from}&to=${to}`);
+                const data = await response.json();
+                
+                if (data.trainServices && data.trainServices.length > 0) {
+                    currentTrains = data.trainServices;
+                    showingAllTrains = data.showingAllTrains || false;
+                    lastUpdateTime = new Date();
+                    displayJourney();
+                    startAutoRefresh();
+                } else {
+                    showError('No trains found for this route.');
+                }
+            } catch (error) {
+                showError('Unable to fetch train times. Please try again.');
+            }
+            
+            document.getElementById('loading').style.display = 'none';
+        }
+        
+        async function getCombinedRoute(from, via, to) {
+            currentFrom = from;
+            currentTo = to;
+            combinedRouteVia = via;
+            isCombinedRoute = true;
+            hasAnnouncedCurrentTrain = false;
+            
+            document.getElementById('routeButtons').style.display = 'none';
+            document.getElementById('results').classList.add('show');
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('journeyContent').innerHTML = '';
+            
+            try {
+                const [leg1Response, leg2Response] = await Promise.all([
+                    fetch(`${WORKER_URL}?from=${from}&to=${via}`),
+                    fetch(`${WORKER_URL}?from=${via}&to=${to}`)
+                ]);
+                
+                const leg1Data = await leg1Response.json();
+                const leg2Data = await leg2Response.json();
+                
+                const leg1Trains = leg1Data.trainServices || [];
+                const leg2Trains = leg2Data.trainServices || [];
+                
+                if (leg1Data.showingAllTrains) {
+                    showError(`No trains found from ${stationNames[from]} to ${stationNames[via]}.`);
+                    document.getElementById('loading').style.display = 'none';
+                    return;
+                }
+                
+                if (leg2Data.showingAllTrains) {
+                    showError(`No trains found from ${stationNames[via]} to ${stationNames[to]}. This connection is not currently viable.`);
+                    document.getElementById('loading').style.display = 'none';
+                    return;
+                }
+                
+                if (leg1Trains.length === 0 || leg2Trains.length === 0) {
+                    showError('No connecting trains found for this route.');
+                    document.getElementById('loading').style.display = 'none';
+                    return;
+                }
+                
+                const connections = findConnections(leg1Trains, leg2Trains, via);
+                
+                if (connections.length === 0) {
+                    showError('No viable connections found. Connection times may be too tight.');
+                    document.getElementById('loading').style.display = 'none';
+                    return;
+                }
+                
+                currentTrains = connections;
+                lastUpdateTime = new Date();
+                displayJourney();
+                startAutoRefresh();
+                
+            } catch (error) {
+                console.error(error);
+                showError('Unable to fetch connection information. Please try again.');
+            }
+            
+            document.getElementById('loading').style.display = 'none';
+        }
+        
+        function findConnections(leg1Trains, leg2Trains, viaStation) {
+            const MIN_CONNECTION_MINUTES = 5;
+            const MAX_CONNECTION_MINUTES = 60;
+            const connections = [];
+            
+            leg1Trains.forEach(train1 => {
+                let arrivalAtVia = null;
+                
+                if (train1.destination && train1.destination[0].crs === viaStation) {
+                    arrivalAtVia = train1.sta || train1.std;
+                } else if (train1.subsequentCallingPoints) {
+                    for (const list of train1.subsequentCallingPoints) {
+                        if (list.callingPoint) {
+                            const viaStop = list.callingPoint.find(cp => cp.crs === viaStation);
+                            if (viaStop) {
+                                arrivalAtVia = viaStop.st;
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                if (!arrivalAtVia) return;
+                
+                leg2Trains.forEach(train2 => {
+                    const departureFromVia = train2.std;
+                    const connectionMinutes = calculateTimeDifference(arrivalAtVia, departureFromVia);
+                    
+                    if (connectionMinutes >= MIN_CONNECTION_MINUTES && connectionMinutes <= MAX_CONNECTION_MINUTES) {
+                        connections.push({
+                            leg1: train1,
+                            leg2: train2,
+                            connectionTime: connectionMinutes,
+                            arrivalAtVia: arrivalAtVia,
+                            departureFromVia: departureFromVia,
+                            isCombined: true
+                        });
+                    }
+                });
+            });
+            
+            connections.sort((a, b) => {
+                return a.leg1.std.localeCompare(b.leg1.std);
+            });
+            
+            return connections;
+        }
+
+        // --- HELPER FUNCTIONS ---
+        
+        function calculateTimeDifference(time1, time2) {
+            const [h1, m1] = time1.split(':').map(Number);
+            const [h2, m2] = time2.split(':').map(Number);
+            
+            let mins1 = h1 * 60 + m1;
+            let mins2 = h2 * 60 + m2;
+            
+            if (mins2 < mins1) {
+                mins2 += 24 * 60;
+            }
+            
+            return mins2 - mins1;
+        }
+        
+        function refreshTrains() {
+            if (isCombinedRoute && currentFrom && combinedRouteVia && currentTo) {
+                getCombinedRoute(currentFrom, combinedRouteVia, currentTo);
+            } else if (currentFrom && currentTo) {
+                getTrains(currentFrom, currentTo);
+            }
+        }
+        
+        function startAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+            autoRefreshInterval = setInterval(refreshTrains, 60000);
+        }
+        
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+        }
+        
+        function formatUpdateTime() {
+            if (!lastUpdateTime) return '';
+            const now = new Date();
+            const diff = Math.floor((now - lastUpdateTime) / 1000);
+            if (diff < 60) return 'Just now';
+            const mins = Math.floor(diff / 60);
+            return `${mins} min${mins > 1 ? 's' : ''} ago`;
+        }
+        
+        function calculateCountdown(departureTime, etd) {
+            if (etd === 'Cancelled') {
+                return '';
+            }
+            
+            let timeToUse = departureTime;
+            if (etd && etd.includes(':')) {
+                timeToUse = etd;
+            }
+            
+            const now = new Date();
+            const [hours, minutes] = timeToUse.split(':').map(Number);
+            const departure = new Date();
+            departure.setHours(hours, minutes, 0, 0);
+            
+            if (departure < now) {
+                departure.setDate(departure.getDate() + 1);
+            }
+            
+            const diff = Math.floor((departure - now) / 60000);
+            
+            if (diff < 0) return '';
+            if (diff === 0) return 'Departing now';
+            if (diff === 1) return 'Departs in 1 min';
+            if (diff < 60) return `Departs in ${diff} mins`;
+            const hoursRemaining = Math.floor(diff / 60);
+            const minsRemaining = diff % 60;
+            return `Departs in ${hoursRemaining}h ${minsRemaining}m`;
+        }
+        
+        function calculateDuration(startTime, endTime) {
+            const [startHour, startMin] = startTime.split(':').map(Number);
+            const [endHour, endMin] = endTime.split(':').map(Number);
+            
+            let totalMinutes = (endHour * 60 + endMin) - (startHour * 60 + startMin);
+            
+            if (totalMinutes < 0) {
+                totalMinutes += 24 * 60;
+            }
+            
+            const hours = Math.floor(totalMinutes /
