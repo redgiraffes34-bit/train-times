@@ -533,6 +533,7 @@
         </button>
         
         <div class="route-buttons" id="routeButtons">
+            <!-- FROM ADDLESTONE -->
             <button class="route-btn" onclick="getTrains('ASN', 'WAT')">
                 <div>Addlestone → Waterloo</div>
                 <span class="from-to">Next departure</span>
@@ -546,11 +547,13 @@
                 <span class="from-to">Via Staines (with connection)</span>
             </button>
             
+            <!-- FROM WEYBRIDGE -->
             <button class="route-btn" onclick="getTrains('WYB', 'WAT')">
                 <div>Weybridge → Waterloo</div>
                 <span class="from-to">Next departure</span>
             </button>
             
+            <!-- FROM WATERLOO -->
             <button class="route-btn" onclick="getTrains('WAT', 'ASN')">
                 <div>Waterloo → Addlestone</div>
                 <span class="from-to">Next departure</span>
@@ -564,6 +567,7 @@
                 <span class="from-to">Next departure</span>
             </button>
             
+            <!-- FROM WINDSOR -->
             <button class="route-btn" onclick="getCombinedRoute('WNR', 'SNS', 'ASN')">
                 <div>Windsor & Eton Riverside → Addlestone</div>
                 <span class="from-to">Via Staines (with connection)</span>
@@ -599,9 +603,7 @@
             'WYB': 'Weybridge',
             'WAT': 'Waterloo',
             'SNS': 'Staines',
-            'WNR': 'Windsor & Eton Riverside',
-            'WOK': 'Woking',
-            'CLJ': 'Clapham Junction'
+            'WNR': 'Windsor & Eton Riverside'
         };
         
         async function getTrains(from, to) {
@@ -733,3 +735,459 @@
                     
                     // Calculate connection time in minutes
                     const connectionMinutes = calculateTimeDifference(arrivalAtVia, departureFromVia);
+                    
+                    if (connectionMinutes >= MIN_CONNECTION_MINUTES && connectionMinutes <= MAX_CONNECTION_MINUTES) {
+                        connections.push({
+                            leg1: train1,
+                            leg2: train2,
+                            connectionTime: connectionMinutes,
+                            arrivalAtVia: arrivalAtVia,
+                            departureFromVia: departureFromVia,
+                            isCombined: true
+                        });
+                    }
+                });
+            });
+            
+            // Sort by earliest departure
+            connections.sort((a, b) => {
+                return a.leg1.std.localeCompare(b.leg1.std);
+            });
+            
+            return connections;
+        }
+        
+        function calculateTimeDifference(time1, time2) {
+            const [h1, m1] = time1.split(':').map(Number);
+            const [h2, m2] = time2.split(':').map(Number);
+            
+            let mins1 = h1 * 60 + m1;
+            let mins2 = h2 * 60 + m2;
+            
+            // Handle overnight (shouldn't happen for these routes but just in case)
+            if (mins2 < mins1) {
+                mins2 += 24 * 60;
+            }
+            
+            return mins2 - mins1;
+        }
+        
+        function refreshTrains() {
+            if (isCombinedRoute && currentFrom && combinedRouteVia && currentTo) {
+                getCombinedRoute(currentFrom, combinedRouteVia, currentTo);
+            } else if (currentFrom && currentTo) {
+                getTrains(currentFrom, currentTo);
+            }
+        }
+        
+        function startAutoRefresh() {
+            // Clear any existing interval
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+            // Refresh every 60 seconds
+            autoRefreshInterval = setInterval(refreshTrains, 60000);
+        }
+        
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+        }
+        
+        function formatUpdateTime() {
+            if (!lastUpdateTime) return '';
+            const now = new Date();
+            const diff = Math.floor((now - lastUpdateTime) / 1000);
+            if (diff < 60) return 'Just now';
+            const mins = Math.floor(diff / 60);
+            return `${mins} min${mins > 1 ? 's' : ''} ago`;
+        }
+        
+        function calculateCountdown(departureTime, etd) {
+            // Don't show countdown for cancelled trains
+            if (etd === 'Cancelled') {
+                return '';
+            }
+            
+            // Use expected time if it's a time string, otherwise use scheduled time
+            let timeToUse = departureTime;
+            if (etd && etd.includes(':')) {
+                timeToUse = etd;
+            }
+            
+            const now = new Date();
+            const [hours, minutes] = timeToUse.split(':').map(Number);
+            const departure = new Date();
+            departure.setHours(hours, minutes, 0, 0);
+            
+            // Handle trains after midnight
+            if (departure < now) {
+                departure.setDate(departure.getDate() + 1);
+            }
+            
+            const diff = Math.floor((departure - now) / 60000); // minutes
+            
+            if (diff < 0) return '';
+            if (diff === 0) return 'Departing now';
+            if (diff === 1) return 'Departs in 1 min';
+            if (diff < 60) return `Departs in ${diff} mins`;
+            const hoursRemaining = Math.floor(diff / 60);
+            const minsRemaining = diff % 60;
+            return `Departs in ${hoursRemaining}h ${minsRemaining}m`;
+        }
+        
+        function toggleVoice() {
+            voiceEnabled = !voiceEnabled;
+            localStorage.setItem('voiceEnabled', voiceEnabled);
+            updateVoiceButton();
+            
+            if (voiceEnabled) {
+                speak("Voice announcements enabled");
+            }
+        }
+        
+        function updateVoiceButton() {
+            const btn = document.getElementById('voiceToggle');
+            if (btn) {
+                if (voiceEnabled) {
+                    btn.classList.remove('disabled');
+                    btn.textContent = '🔊';
+                } else {
+                    btn.classList.add('disabled');
+                    btn.textContent = '🔇';
+                }
+            }
+        }
+        
+        function speak(text) {
+            if (!voiceEnabled) return;
+            
+            // Cancel any ongoing speech
+            window.speechSynthesis.cancel();
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 0.9; // Slightly slower for clarity
+            utterance.pitch = 1.0;
+            utterance.volume = 1.0;
+            
+            // Try to use a British English voice if available
+            const voices = window.speechSynthesis.getVoices();
+            const britishVoice = voices.find(voice => 
+                voice.lang.startsWith('en-GB') || voice.name.includes('British') || voice.name.includes('UK')
+            );
+            if (britishVoice) {
+                utterance.voice = britishVoice;
+            }
+            
+            window.speechSynthesis.speak(utterance);
+        }
+        
+        function announceHeroTrain(train) {
+            if (!voiceEnabled) return;
+            
+            const std = train.std;
+            const etd = train.etd;
+            const destName = train.destination && train.destination[0] ? train.destination[0].locationName : 'Unknown';
+            const platform = train.platform || 'to be confirmed';
+            
+            let announcement = '';
+            
+            if (isCombinedRoute) {
+                // For combined routes, announce the connection
+                announcement = `The next train to ${stationNames[currentTo]} via ${stationNames[combinedRouteVia]} `;
+                announcement += `departs at ${std.replace(':', ' ')} from platform ${platform}`;
+            } else {
+                announcement = `The next train to ${destName} departs at ${std.replace(':', ' ')} from platform ${platform}`;
+            }
+            
+            // Add countdown if available
+            const countdown = calculateCountdown(std, etd);
+            if (countdown && etd !== 'Cancelled') {
+                // Convert countdown text for better voice pronunciation
+                let countdownText = countdown.replace('Departs in ', '');
+                // Replace "1h 23m" with "1 hour 23 minutes"
+                countdownText = countdownText.replace(/(\d+)h\s+(\d+)m/, function(match, hours, mins) {
+                    const hourText = hours === '1' ? 'hour' : 'hours';
+                    const minText = mins === '1' ? 'minute' : 'minutes';
+                    return `${hours} ${hourText} ${mins} ${minText}`;
+                });
+                // Replace standalone "23m" with "23 minutes"
+                countdownText = countdownText.replace(/^(\d+)m$/, function(match, mins) {
+                    return mins === '1' ? '1 minute' : `${mins} minutes`;
+                });
+                // Replace "23 mins" with "23 minutes" (from calculateCountdown)
+                countdownText = countdownText.replace(/(\d+)\s+mins/, function(match, mins) {
+                    return mins === '1' ? '1 minute' : `${mins} minutes`;
+                });
+                // Replace "1 min" with "1 minute"
+                countdownText = countdownText.replace(/1\s+min$/, '1 minute');
+                announcement += `, ${countdownText}`;
+            }
+            
+            // Add delay/cancellation info
+            if (etd === 'Cancelled') {
+                announcement = `This service has been cancelled. ${announcement}`;
+            } else if (etd && etd.includes(':') && etd !== std) {
+                announcement += `. This train is delayed and is now expected at ${etd.replace(':', ' ')}`;
+            }
+            
+            speak(announcement);
+        }
+        
+        function announceConnection(connection) {
+            if (!voiceEnabled) return;
+            
+            const leg1 = connection.leg1;
+            const connectionMins = connection.connectionTime;
+            
+            let announcement = `The next connection to ${stationNames[currentTo]} via ${stationNames[combinedRouteVia]} `;
+            announcement += `departs at ${leg1.std.replace(':', ' ')} from platform ${leg1.platform || 'to be confirmed'}`;
+            announcement += `. Change at ${stationNames[combinedRouteVia]} with a ${connectionMins} minute connection`;
+            
+            speak(announcement);
+        }
+        
+        function displayCombinedJourneys(htmlPrefix, content) {
+            let html = htmlPrefix;
+            
+            // Show top 2 recommended connections as hero cards
+            const topConnections = currentTrains.slice(0, Math.min(2, currentTrains.length));
+            
+            topConnections.forEach((connection, idx) => {
+                html += renderCombinedJourney(connection, idx === 0);
+            });
+            
+            // Auto-announce the first connection
+            if (topConnections.length > 0 && !hasAnnouncedCurrentTrain) {
+                setTimeout(() => announceConnection(topConnections[0]), 500);
+                hasAnnouncedCurrentTrain = true;
+            }
+            
+            // Show other connections
+            if (currentTrains.length > 2) {
+                html += `<div class="other-trains-header">OTHER CONNECTIONS</div>`;
+                currentTrains.slice(2).forEach((connection, idx) => {
+                    html += renderCombinedJourney(connection, false);
+                });
+            }
+            
+            html += `
+                <button class="back-btn" onclick="goBack()">
+                    ← Back to Routes
+                </button>
+            `;
+            
+            content.innerHTML = html;
+        }
+        
+        function renderCombinedJourney(connection, isHero) {
+            const leg1 = connection.leg1;
+            const leg2 = connection.leg2;
+            const connectionMins = connection.connectionTime;
+            
+            // Calculate total journey time
+            const totalMins = calculateTimeDifference(leg1.std, leg2.sta || getArrivalTime(leg2, currentTo));
+            const totalHours = Math.floor(totalMins / 60);
+            const totalMinsRemainder = totalMins % 60;
+            const totalTimeStr = totalHours > 0 ? `${totalHours}h ${totalMinsRemainder}m` : `${totalMinsRemainder}m`;
+            
+            // Determine connection quality
+            let connectionClass = 'good';
+            let connectionLabel = `${connectionMins} min connection`;
+            if (connectionMins < 7) {
+                connectionClass = 'tight';
+                connectionLabel = `⚠️ Tight ${connectionMins} min connection`;
+            } else if (connectionMins >= 15) {
+                connectionLabel = `✓ Comfortable ${connectionMins} min connection`;
+            }
+            
+            const countdown = calculateCountdown(leg1.std, leg1.etd);
+            
+            return `
+                <div class="combined-journey">
+                    ${isHero ? `<div class="hero-label">⭐ RECOMMENDED CONNECTION<button class="speak-btn" onclick="announceConnection(currentTrains[0])" title="Announce this connection">🔊</button></div>` : ''}
+                    ${countdown ? `<div class="hero-countdown">${countdown}</div>` : ''}
+                    
+                    <div class="combined-leg">
+                        <div class="leg-header">
+                            <div>
+                                <div class="leg-time">${leg1.std}</div>
+                                <div><strong>${stationNames[currentFrom]} → ${stationNames[combinedRouteVia]}</strong></div>
+                            </div>
+                            ${leg1.platform ? `<div class="platform">Platform ${leg1.platform}</div>` : `<div class="platform-tbd">Platform TBC</div>`}
+                        </div>
+                        <div>Arrives ${stationNames[combinedRouteVia]}: ${connection.arrivalAtVia}</div>
+                        ${leg1.operator ? `<div style="font-size: 14px; color: #666;">Operator: ${leg1.operator}</div>` : ''}
+                    </div>
+                    
+                    <div class="connection-time ${connectionClass}">
+                        ${connectionLabel} at ${stationNames[combinedRouteVia]}
+                    </div>
+                    
+                    <div class="combined-leg">
+                        <div class="leg-header">
+                            <div>
+                                <div class="leg-time">${leg2.std}</div>
+                                <div><strong>${stationNames[combinedRouteVia]} → ${stationNames[currentTo]}</strong></div>
+                            </div>
+                            ${leg2.platform ? `<div class="platform">Platform ${leg2.platform}</div>` : `<div class="platform-tbd">Platform TBC</div>`}
+                        </div>
+                        ${leg2.operator ? `<div style="font-size: 14px; color: #666;">Operator: ${leg2.operator}</div>` : ''}
+                    </div>
+                    
+                    <div class="total-journey-time">
+                        Total journey time: ${totalTimeStr}
+                    </div>
+                </div>
+            `;
+        }
+        
+        function getArrivalTime(train, toCrs) {
+            if (train.destination && train.destination[0].crs === toCrs) {
+                return train.sta || train.std;
+            }
+            if (train.subsequentCallingPoints) {
+                for (const list of train.subsequentCallingPoints) {
+                    if (list.callingPoint) {
+                        const stop = list.callingPoint.find(cp => cp.crs === toCrs);
+                        if (stop) return stop.st;
+                    }
+                }
+            }
+            return train.std;
+        }
+        
+        function displayJourney() {
+            const content = document.getElementById('journeyContent');
+            
+            let html = '';
+            
+            // Add results header with refresh button
+            const headerTitle = isCombinedRoute 
+                ? `${stationNames[currentFrom]} → ${stationNames[currentTo]} (via ${stationNames[combinedRouteVia]})`
+                : `${stationNames[currentFrom]} → ${stationNames[currentTo]}`;
+            
+            html += `
+                <div class="results-header">
+                    <h2>${headerTitle}</h2>
+                    <div class="update-info">
+                        <span>Updated ${formatUpdateTime()}</span>
+                        <button class="refresh-btn" onclick="refreshTrains()">
+                            ↻ Refresh
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // Handle combined route display differently
+            if (isCombinedRoute) {
+                displayCombinedJourneys(html, content);
+                return;
+            }
+            
+            // Show fallback message if we're displaying all trains
+            if (showingAllTrains) {
+                html += `
+                    <div class="fallback-message">
+                        <strong>No direct trains to ${stationNames[currentTo]} available</strong>
+                        <p>Showing all departing trains from ${stationNames[currentFrom]}</p>
+                    </div>
+                `;
+            }
+            
+            // Find the recommended train (next departing train)
+            const recommendedTrain = currentTrains.length > 0 ? currentTrains[0] : null;
+            
+            if (recommendedTrain) {
+                html += renderHeroTrain(recommendedTrain);
+                
+                // Auto-announce the hero train (only once per load, not on refresh)
+                if (!hasAnnouncedCurrentTrain) {
+                    setTimeout(() => announceHeroTrain(recommendedTrain), 500);
+                    hasAnnouncedCurrentTrain = true;
+                }
+            }
+            
+            // Separate trains into direct and with changes (excluding the hero train)
+            const directTrains = [];
+            const changeTrains = [];
+            
+            currentTrains.forEach((train, idx) => {
+                // Skip the first train as it's the hero
+                if (idx === 0) return;
+                
+                // Check if destination matches directly
+                const isDirect = train.destination && train.destination.some(dest => dest.crs === currentTo);
+                
+                if (isDirect) {
+                    directTrains.push(train);
+                } else {
+                    // Check if train calls at the destination
+                    let callsAtDestination = false;
+                    if (train.subsequentCallingPoints) {
+                        for (const callingPointList of train.subsequentCallingPoints) {
+                            if (callingPointList.callingPoint) {
+                                if (callingPointList.callingPoint.some(cp => cp.crs === currentTo)) {
+                                    callsAtDestination = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (callsAtDestination) {
+                        changeTrains.push(train);
+                    } else if (showingAllTrains) {
+                        // When showing all trains, include everything
+                        train.notToDestination = true;
+                        changeTrains.push(train);
+                    }
+                }
+            });
+            
+            // Only show "Other trains" section if there are more trains
+            if (directTrains.length > 0 || changeTrains.length > 0) {
+                html += `<div class="other-trains-header">OTHER TRAINS</div>`;
+            }
+            
+            // Direct trains section
+            if (directTrains.length > 0) {
+                html += `<div class="section-header">DIRECT TRAINS</div>`;
+                directTrains.forEach((train, index) => {
+                    html += renderTrain(train, index);
+                });
+            } else if (!showingAllTrains) {
+                html += `<div class="section-header">DIRECT TRAINS</div>`;
+                html += `<div class="no-trains">No direct trains available</div>`;
+            }
+            
+            // Trains with changes / alternate destinations section
+            if (changeTrains.length > 0) {
+                if (showingAllTrains) {
+                    html += `<div class="section-header" style="margin-top: 20px;">DEPARTING TRAINS</div>`;
+                } else {
+                    html += `<div class="section-header" style="margin-top: 20px;">TRAINS WITH CHANGES</div>`;
+                }
+                changeTrains.forEach((train, index) => {
+                    html += renderTrain(train, index);
+                });
+            }
+            
+            html += `
+                <button class="back-btn" onclick="goBack()">
+                    ← Back to Routes
+                </button>
+            `;
+            
+            content.innerHTML = html;
+        }
+        
+        function renderHeroTrain(train) {
+            const std = train.std;
+            const etd = train.etd;
+            const destName = train.destination && train.destination[0] ? train.destination[0].locationName : 'Unknown';
+            const destCrs = train.destination && train.destination[0] ? train.destination[0].crs : '';
+            
+          
