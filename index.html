@@ -501,6 +501,18 @@
                 <div>Addlestone → Waterloo</div>
                 <span class="from-to">Via Weybridge (with connection)</span>
             </button>
+            <button class="route-btn" onclick="getCombinedRoute('WAT', 'WYB', 'ASN')">
+                <div>Waterloo → Addlestone</div>
+                <span class="from-to">Via Weybridge (with connection)</span>
+            </button>
+            <button class="route-btn" onclick="getCombinedRoute('ASN', 'SNS', 'WNR')">
+                <div>Addlestone → Windsor & Eton Riverside</div>
+                <span class="from-to">Via Staines (with connection)</span>
+            </button>
+            <button class="route-btn" onclick="getCombinedRoute('WNR', 'SNS', 'ASN')">
+                <div>Windsor & Eton Riverside → Addlestone</div>
+                <span class="from-to">Via Staines (with connection)</span>
+            </button>
             <button class="route-btn" onclick="getTrains('WYB', 'WAT')">
                 <div>Weybridge → Waterloo</div>
                 <span class="from-to">Next departure</span>
@@ -540,7 +552,9 @@
         const stationNames = {
             'ASN': 'Addlestone',
             'WYB': 'Weybridge',
-            'WAT': 'Waterloo'
+            'WAT': 'Waterloo',
+            'SNS': 'Staines',
+            'WNR': 'Windsor & Eton Riverside'
         };
         
         async function getTrains(from, to) {
