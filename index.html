@@ -272,6 +272,13 @@
             font-size: 15px;
             margin-top: 3px;
         }
+        
+        .duration {
+            color: #667eea;
+            font-weight: 600;
+            font-size: 15px;
+            margin-top: 3px;
+        }
     </style>
 </head>
 <body>
@@ -443,6 +450,53 @@
                     list.callingPoint && list.callingPoint.some(cp => cp.crs === currentTo)
                 );
             
+            // Calculate journey duration
+            let durationText = '';
+            let arrivalTime = '';
+            
+            console.log('Train:', train.std, 'to', destName, 'Looking for:', currentTo);
+            
+            // Always try to calculate duration to wherever the train is actually going
+            if (train.destination && train.destination[0]) {
+                // For direct trains or trains where we just want to show time to final destination
+                if (train.sta) {
+                    arrivalTime = train.sta;
+                    console.log('Using sta:', arrivalTime);
+                } else if (train.subsequentCallingPoints && train.subsequentCallingPoints.length > 0) {
+                    // Find the last calling point to get the final arrival time
+                    const lastList = train.subsequentCallingPoints[train.subsequentCallingPoints.length - 1];
+                    if (lastList.callingPoint && lastList.callingPoint.length > 0) {
+                        const lastStop = lastList.callingPoint[lastList.callingPoint.length - 1];
+                        arrivalTime = lastStop.st;
+                        console.log('Using last calling point:', lastStop.locationName, arrivalTime);
+                    }
+                }
+            }
+            
+            // If we're looking for a specific destination and train calls there, show time to that stop instead
+            if (callsAtDestination && train.subsequentCallingPoints) {
+                for (const list of train.subsequentCallingPoints) {
+                    if (list.callingPoint) {
+                        const destStop = list.callingPoint.find(cp => cp.crs === currentTo);
+                        if (destStop) {
+                            arrivalTime = destStop.st;
+                            console.log('Found calling point at destination, arrival:', arrivalTime);
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            console.log('Final arrival time:', arrivalTime, 'Departure:', train.std);
+            
+            if (arrivalTime && train.std) {
+                const duration = calculateDuration(train.std, arrivalTime);
+                console.log('Calculated duration:', duration);
+                if (duration) {
+                    durationText = `<div class="duration">Journey: ${duration}</div>`;
+                }
+            }
+            
             // Get connection info
             let connectionInfo = '';
             if (callsAtDestination) {
@@ -467,12 +521,35 @@
                     <div class="journey-details">
                         <div><strong>${stationNames[currentFrom]} → ${destName}</strong></div>
                         ${connectionInfo}
+                        ${durationText}
                         <div>Scheduled: ${train.std}</div>
                         ${train.operator ? `<div>Operator: ${train.operator}</div>` : ''}
                         ${isDelayed ? `<div class="status delayed">${train.delayReason || 'Delayed'}</div>` : `<div class="status on-time">On time</div>`}
                     </div>
                 </div>
             `;
+        }
+        
+        function calculateDuration(startTime, endTime) {
+            // Parse times in HH:MM format
+            const [startHour, startMin] = startTime.split(':').map(Number);
+            const [endHour, endMin] = endTime.split(':').map(Number);
+            
+            let totalMinutes = (endHour * 60 + endMin) - (startHour * 60 + startMin);
+            
+            // Handle overnight journeys (shouldn't happen for these routes but just in case)
+            if (totalMinutes < 0) {
+                totalMinutes += 24 * 60;
+            }
+            
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+            
+            if (hours > 0) {
+                return `${hours}h ${minutes}m`;
+            } else {
+                return `${minutes}m`;
+            }
         }
         
         function goBack() {
