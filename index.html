@@ -1,3 +1,5 @@
+Output
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -907,11 +909,22 @@
             if (countdown && etd !== 'Cancelled') {
                 // Convert countdown text for better voice pronunciation
                 let countdownText = countdown.replace('Departs in ', '');
-                countdownText = countdownText.replace(/(\d+)h/g, '$1 hours');
-                countdownText = countdownText.replace(/(\d+)m$/g, '$1 minutes');
-                countdownText = countdownText.replace(/(\d+)m /g, '$1 minutes ');
-                countdownText = countdownText.replace(' mins', ' minutes');
-                countdownText = countdownText.replace(' min', ' minute');
+                // Replace "1h 23m" with "1 hour 23 minutes"
+                countdownText = countdownText.replace(/(\d+)h\s+(\d+)m/, function(match, hours, mins) {
+                    const hourText = hours === '1' ? 'hour' : 'hours';
+                    const minText = mins === '1' ? 'minute' : 'minutes';
+                    return `${hours} ${hourText} ${mins} ${minText}`;
+                });
+                // Replace standalone "23m" with "23 minutes"
+                countdownText = countdownText.replace(/^(\d+)m$/, function(match, mins) {
+                    return mins === '1' ? '1 minute' : `${mins} minutes`;
+                });
+                // Replace "23 mins" with "23 minutes" (from calculateCountdown)
+                countdownText = countdownText.replace(/(\d+)\s+mins/, function(match, mins) {
+                    return mins === '1' ? '1 minute' : `${mins} minutes`;
+                });
+                // Replace "1 min" with "1 minute"
+                countdownText = countdownText.replace(/1\s+min$/, '1 minute');
                 announcement += `, ${countdownText}`;
             }
             
