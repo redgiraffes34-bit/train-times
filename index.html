@@ -468,9 +468,9 @@
             if (diff === 0) return 'Departing now';
             if (diff === 1) return 'Departs in 1 min';
             if (diff < 60) return `Departs in ${diff} mins`;
-            const hours = Math.floor(diff / 60);
-            const mins = diff % 60;
-            return `Departs in ${hours}h ${mins}m`;
+            const hoursRemaining = Math.floor(diff / 60);
+            const minsRemaining = diff % 60;
+            return `Departs in ${hoursRemaining}h ${minsRemaining}m`;
         }
         
         function displayJourney() {
