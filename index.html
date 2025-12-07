@@ -363,6 +363,70 @@
             border-bottom: 1px solid #eee;
         }
         
+        .combined-journey {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .combined-leg {
+            padding: 15px 0;
+        }
+        
+        .combined-leg:first-child {
+            padding-top: 0;
+        }
+        
+        .combined-leg:not(:last-child) {
+            border-bottom: 2px dashed #e0e0e0;
+        }
+        
+        .leg-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .leg-time {
+            font-size: 28px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .connection-time {
+            background: #fff3cd;
+            color: #856404;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            text-align: center;
+            margin: 10px 0;
+        }
+        
+        .connection-time.good {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .connection-time.tight {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .total-journey-time {
+            background: #667eea;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-weight: 600;
+            text-align: center;
+            margin-top: 15px;
+        }
+        
         .results-header {
             background: white;
             border-radius: 15px;
@@ -433,6 +497,10 @@
                 <div>Addlestone → Waterloo</div>
                 <span class="from-to">Next departure</span>
             </button>
+            <button class="route-btn" onclick="getCombinedRoute('ASN', 'WYB', 'WAT')">
+                <div>Addlestone → Waterloo</div>
+                <span class="from-to">Via Weybridge (with connection)</span>
+            </button>
             <button class="route-btn" onclick="getTrains('WYB', 'WAT')">
                 <div>Weybridge → Waterloo</div>
                 <span class="from-to">Next departure</span>
@@ -464,6 +532,8 @@
         let showingAllTrains = false;
         let lastUpdateTime = null;
         let autoRefreshInterval = null;
+        let isCombinedRoute = false;
+        let combinedRouteVia = '';
         
         const WORKER_URL = 'https://train-times-api.redgiraffes74.workers.dev';
         
@@ -503,8 +573,131 @@
             document.getElementById('loading').style.display = 'none';
         }
         
+        async function getCombinedRoute(from, via, to) {
+            currentFrom = from;
+            currentTo = to;
+            combinedRouteVia = via;
+            isCombinedRoute = true;
+            
+            document.getElementById('routeButtons').style.display = 'none';
+            document.getElementById('results').classList.add('show');
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('journeyContent').innerHTML = '';
+            
+            try {
+                // Fetch both legs of the journey
+                const [leg1Response, leg2Response] = await Promise.all([
+                    fetch(`${WORKER_URL}?from=${from}&to=${via}`),
+                    fetch(`${WORKER_URL}?from=${via}&to=${to}`)
+                ]);
+                
+                const leg1Data = await leg1Response.json();
+                const leg2Data = await leg2Response.json();
+                
+                const leg1Trains = leg1Data.trainServices || [];
+                const leg2Trains = leg2Data.trainServices || [];
+                
+                if (leg1Trains.length === 0 || leg2Trains.length === 0) {
+                    showError('No connecting trains found for this route.');
+                    document.getElementById('loading').style.display = 'none';
+                    return;
+                }
+                
+                // Match up connections with minimum 5 minute connection time
+                const connections = findConnections(leg1Trains, leg2Trains, via);
+                
+                if (connections.length === 0) {
+                    showError('No viable connections found. Connection times may be too tight.');
+                    document.getElementById('loading').style.display = 'none';
+                    return;
+                }
+                
+                currentTrains = connections;
+                lastUpdateTime = new Date();
+                displayJourney();
+                startAutoRefresh();
+                
+            } catch (error) {
+                showError('Unable to fetch connection information. Please try again.');
+            }
+            
+            document.getElementById('loading').style.display = 'none';
+        }
+        
+        function findConnections(leg1Trains, leg2Trains, viaStation) {
+            const MIN_CONNECTION_MINUTES = 5;
+            const MAX_CONNECTION_MINUTES = 60;
+            const connections = [];
+            
+            leg1Trains.forEach(train1 => {
+                // Find arrival time at via station
+                let arrivalAtVia = null;
+                
+                // Check if via station is the final destination
+                if (train1.destination && train1.destination[0].crs === viaStation) {
+                    arrivalAtVia = train1.sta || train1.std; // Use sta if available, otherwise std
+                } else if (train1.subsequentCallingPoints) {
+                    // Find via station in calling points
+                    for (const list of train1.subsequentCallingPoints) {
+                        if (list.callingPoint) {
+                            const viaStop = list.callingPoint.find(cp => cp.crs === viaStation);
+                            if (viaStop) {
+                                arrivalAtVia = viaStop.st;
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                if (!arrivalAtVia) return;
+                
+                // Find connecting trains from via station
+                leg2Trains.forEach(train2 => {
+                    const departureFromVia = train2.std;
+                    
+                    // Calculate connection time in minutes
+                    const connectionMinutes = calculateTimeDifference(arrivalAtVia, departureFromVia);
+                    
+                    if (connectionMinutes >= MIN_CONNECTION_MINUTES && connectionMinutes <= MAX_CONNECTION_MINUTES) {
+                        connections.push({
+                            leg1: train1,
+                            leg2: train2,
+                            connectionTime: connectionMinutes,
+                            arrivalAtVia: arrivalAtVia,
+                            departureFromVia: departureFromVia,
+                            isCombined: true
+                        });
+                    }
+                });
+            });
+            
+            // Sort by earliest departure
+            connections.sort((a, b) => {
+                return a.leg1.std.localeCompare(b.leg1.std);
+            });
+            
+            return connections;
+        }
+        
+        function calculateTimeDifference(time1, time2) {
+            const [h1, m1] = time1.split(':').map(Number);
+            const [h2, m2] = time2.split(':').map(Number);
+            
+            let mins1 = h1 * 60 + m1;
+            let mins2 = h2 * 60 + m2;
+            
+            // Handle overnight (shouldn't happen for these routes but just in case)
+            if (mins2 < mins1) {
+                mins2 += 24 * 60;
+            }
+            
+            return mins2 - mins1;
+        }
+        
         function refreshTrains() {
-            if (currentFrom && currentTo) {
+            if (isCombinedRoute && currentFrom && combinedRouteVia && currentTo) {
+                getCombinedRoute(currentFrom, combinedRouteVia, currentTo);
+            } else if (currentFrom && currentTo) {
                 getTrains(currentFrom, currentTo);
             }
         }
@@ -556,15 +749,123 @@
             return `Departs in ${hoursRemaining}h ${minsRemaining}m`;
         }
         
+        function displayCombinedJourneys(htmlPrefix, content) {
+            let html = htmlPrefix;
+            
+            // Show top 2 recommended connections as hero cards
+            const topConnections = currentTrains.slice(0, Math.min(2, currentTrains.length));
+            
+            topConnections.forEach((connection, idx) => {
+                html += renderCombinedJourney(connection, idx === 0);
+            });
+            
+            // Show other connections
+            if (currentTrains.length > 2) {
+                html += `<div class="other-trains-header">OTHER CONNECTIONS</div>`;
+                currentTrains.slice(2).forEach((connection, idx) => {
+                    html += renderCombinedJourney(connection, false);
+                });
+            }
+            
+            html += `
+                <button class="back-btn" onclick="goBack()">
+                    ← Back to Routes
+                </button>
+            `;
+            
+            content.innerHTML = html;
+        }
+        
+        function renderCombinedJourney(connection, isHero) {
+            const leg1 = connection.leg1;
+            const leg2 = connection.leg2;
+            const connectionMins = connection.connectionTime;
+            
+            // Calculate total journey time
+            const totalMins = calculateTimeDifference(leg1.std, leg2.sta || getArrivalTime(leg2, currentTo));
+            const totalHours = Math.floor(totalMins / 60);
+            const totalMinsRemainder = totalMins % 60;
+            const totalTimeStr = totalHours > 0 ? `${totalHours}h ${totalMinsRemainder}m` : `${totalMinsRemainder}m`;
+            
+            // Determine connection quality
+            let connectionClass = 'good';
+            let connectionLabel = `${connectionMins} min connection`;
+            if (connectionMins < 7) {
+                connectionClass = 'tight';
+                connectionLabel = `⚠️ Tight ${connectionMins} min connection`;
+            } else if (connectionMins >= 15) {
+                connectionLabel = `✓ Comfortable ${connectionMins} min connection`;
+            }
+            
+            const countdown = calculateCountdown(leg1.std);
+            
+            return `
+                <div class="combined-journey">
+                    ${isHero ? `<div class="hero-label">⭐ RECOMMENDED CONNECTION</div>` : ''}
+                    ${countdown ? `<div class="hero-countdown">${countdown}</div>` : ''}
+                    
+                    <div class="combined-leg">
+                        <div class="leg-header">
+                            <div>
+                                <div class="leg-time">${leg1.std}</div>
+                                <div><strong>${stationNames[currentFrom]} → ${stationNames[combinedRouteVia]}</strong></div>
+                            </div>
+                            ${leg1.platform ? `<div class="platform">Platform ${leg1.platform}</div>` : `<div class="platform-tbd">Platform TBC</div>`}
+                        </div>
+                        <div>Arrives ${stationNames[combinedRouteVia]}: ${connection.arrivalAtVia}</div>
+                        ${leg1.operator ? `<div style="font-size: 14px; color: #666;">Operator: ${leg1.operator}</div>` : ''}
+                    </div>
+                    
+                    <div class="connection-time ${connectionClass}">
+                        ${connectionLabel} at ${stationNames[combinedRouteVia]}
+                    </div>
+                    
+                    <div class="combined-leg">
+                        <div class="leg-header">
+                            <div>
+                                <div class="leg-time">${leg2.std}</div>
+                                <div><strong>${stationNames[combinedRouteVia]} → ${stationNames[currentTo]}</strong></div>
+                            </div>
+                            ${leg2.platform ? `<div class="platform">Platform ${leg2.platform}</div>` : `<div class="platform-tbd">Platform TBC</div>`}
+                        </div>
+                        ${leg2.operator ? `<div style="font-size: 14px; color: #666;">Operator: ${leg2.operator}</div>` : ''}
+                    </div>
+                    
+                    <div class="total-journey-time">
+                        Total journey time: ${totalTimeStr}
+                    </div>
+                </div>
+            `;
+        }
+        
+        function getArrivalTime(train, toCrs) {
+            if (train.destination && train.destination[0].crs === toCrs) {
+                return train.sta || train.std;
+            }
+            if (train.subsequentCallingPoints) {
+                for (const list of train.subsequentCallingPoints) {
+                    if (list.callingPoint) {
+                        const stop = list.callingPoint.find(cp => cp.crs === toCrs);
+                        if (stop) return stop.st;
+                    }
+                }
+            }
+            return train.std;
+        }
+        
         function displayJourney() {
             const content = document.getElementById('journeyContent');
             
             let html = '';
             
             // Add results header with refresh button
+            const headerTitle = isCombinedRoute 
+                ? `${stationNames[currentFrom]} → ${stationNames[currentTo]} (via ${stationNames[combinedRouteVia]})`
+                : `${stationNames[currentFrom]} → ${stationNames[currentTo]}`;
+            
             html += `
                 <div class="results-header">
-                    <h2>${stationNames[currentFrom]} → ${stationNames[currentTo]}</h2>
+                    <h2>${headerTitle}</h2>
                     <div class="update-info">
                         <span>Updated ${formatUpdateTime()}</span>
                         <button class="refresh-btn" onclick="refreshTrains()">
@@ -573,6 +874,12 @@
                     </div>
                 </div>
             `;
+            
+            // Handle combined route display differently
+            if (isCombinedRoute) {
+                displayCombinedJourneys(html, content);
+                return;
+            }
             
             // Show fallback message if we're displaying all trains
             if (showingAllTrains) {
@@ -851,6 +1158,8 @@
         
         function goBack() {
             stopAutoRefresh();
+            isCombinedRoute = false;
+            combinedRouteVia = '';
             document.getElementById('results').classList.remove('show');
             document.getElementById('routeButtons').style.display = 'grid';
         }
